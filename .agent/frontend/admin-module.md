@@ -1,234 +1,64 @@
 # Admin Module - Abogado Sala
 
-Panel de administración para super usuarios y admins de organización.
+Gestión avanzada de organización y gobernanza de datos. **MODULO EXCLUSIVO PARA OWNER**.
 
-## Skills Requeridos
+## 1. Arquitectura (`src/features/admin/`)
 
-- `shadcn-ui` → Tables, Forms, Tabs
-- `react-best-practices` → Data fetching
-- `nextjs-best-practices` → Server Actions
+Este módulo es una "Area VIP". Todo componente aquí asume que el usuario es `ADMIN`.
 
-## Referencia Original
+## 2. Flujos de Usuario (Owner Persona)
 
-`sala-cliente/src/app/(admin)/` y `sala-cliente/src/components/admin/`
+### A. Gestión de Equipo (El Despacho)
 
----
+1. **Invitar Abogado**:
+   - Input: Email.
+   - Action: Sistema envía invitación.
+   - UI: El abogado aparece "Pendiente" en la lista de equipo.
+2. **Monitoreo de Actividad**:
+   - Owner ve tabla "Actividad Reciente".
+   - Filtro: "Ver actividad de [Abogado Jr.]".
+   - Dato: "Abogado Jr. creó el expediente X".
 
-## Páginas a Crear
+### B. Configuración del Negocio (Branding & Defaults)
 
-```
-src/app/(admin)/admin/
-├── page.tsx              # Dashboard admin
-├── loading.tsx           # Loading state
-├── layout.tsx            # Admin layout (usa AdminSidebar)
-├── usuarios/
-│   ├── page.tsx         # Lista de usuarios
-│   └── [id]/
-│       └── page.tsx     # Detalle de usuario
-├── despacho/
-│   ├── page.tsx         # Configuración del despacho
-│   └── (subpages)
-├── configuracion/
-│   └── page.tsx         # Configuración del sistema
-└── auditoria/
-    └── page.tsx         # Logs de auditoría
-```
+1. **Personalización**:
+   - Owner sube Logo y elige Color Primario.
+   - **Feedback**: El dashboard del Owner Y el de los Lawyers se actualiza automáticamente con el nuevo logo/color.
 
----
+1. **Plantillas de Comunicación [NUEVO]**:
+   - **WhatsApp Default**: Definir el mensaje base que usarán todos los abogados.
+   - **Variables Disponibles**: `{client_name}`, `{lawyer_name}`, `{case_name}`, `{portal_link}`.
+   - **Editor**: El admin define el texto predeterminado con placeholders.
 
-## Componentes Admin
+### C. Métricas de Negocio
 
-### 1. Admin Metric Cards
+- "Clientes Totales" (Global).
+- "Expedientes Cerrados este mes" (Global).
+- "Expedientes Cerrados este mes" (Global).
+- "Almacenamiento usado" (Global).
 
-**Ubicación**: `src/components/admin/admin-metric-cards.tsx`
+### D. Facturación (Billing)
 
-**Métricas de Admin**:
-| Métrica | Descripción |
-|---------|-------------|
-| Usuarios Activos | Total de usuarios en la org |
-| Salas Creadas | Total de salas |
-| Almacenamiento | Espacio usado |
-| Plan Actual | Tipo de suscripción |
+Gestionado en un módulo dedicado. Ver [**Billing Module**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/billing-module.md).
+
+- El Owner gestiona su suscripción SaaS.
+- Los Lawyers NO tienen acceso a esta información.
 
 ---
 
-### 2. Users Table
+## 3. Restricciones Técnicas (Lawyer View)
 
-**Ubicación**: `src/components/admin/users-table.tsx`
+Si un Lawyer logra invocar estas acciones vía API (bypass UI):
 
-**Columnas**:
-
-- Avatar + Nombre
-- Email
-- Rol (badge)
-- Estado (activo/inactivo)
-- Último acceso
-- Acciones
-
-**Roles**:
-
-```typescript
-type UserRole = "super_admin" | "admin" | "lawyer" | "employee";
-
-const roleConfig = {
-  super_admin: { label: "Super Admin", variant: "destructive" },
-  admin: { label: "Admin", variant: "default" },
-  lawyer: { label: "Abogado", variant: "secondary" },
-  employee: { label: "Empleado", variant: "outline" },
-};
-```
+- `PermissionsGuard`: El backend debe rechazar la transacción.
+- La UI simplemente **no renderiza** el link "Ajustes de Equipo" en el Sidebar del Lawyer.
 
 ---
 
-### 3. User Detail
+## 4. Diferencias de Interfaz Visibles
 
-**Ubicación**: `src/components/admin/user-detail.tsx`
-
-**Secciones**:
-
-- Información personal (editable)
-- Cambiar rol
-- Desactivar usuario
-- Historial de actividad
-
----
-
-### 4. Invite User Dialog
-
-**Ubicación**: `src/components/admin/invite-user-dialog.tsx`
-
-**Campos**:
-
-- Email del usuario
-- Rol a asignar
-- Mensaje personalizado (opcional)
-
-```tsx
-<Dialog>
-  <DialogTrigger asChild>
-    <Button>
-      <UserPlus className="mr-2 h-4 w-4" />
-      Invitar Usuario
-    </Button>
-  </DialogTrigger>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Invitar Nuevo Usuario</DialogTitle>
-      <DialogDescription>
-        Envía una invitación por email para unirse a tu equipo.
-      </DialogDescription>
-    </DialogHeader>
-    <Form>
-      <FormField name="email">...</FormField>
-      <FormField name="role">...</FormField>
-    </Form>
-    <DialogFooter>
-      <Button type="submit">Enviar Invitación</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-```
-
----
-
-### 5. Organization Settings
-
-**Ubicación**: `src/components/admin/organization-settings.tsx`
-
-**Tabs**:
-
-```
-Tabs
-├── General
-│   ├── Nombre del despacho
-│   ├── Logo (upload)
-│   ├── Dirección
-│   └── Teléfono
-├── Branding
-│   ├── Color primario (color picker)
-│   ├── Color secundario
-│   └── Preview
-└── Facturación
-    ├── Plan actual
-    ├── Próximo cobro
-    └── Métodos de pago
-```
-
----
-
-### 6. System Settings
-
-**Ubicación**: `src/components/admin/system-settings.tsx`
-
-**Configuraciones**:
-
-- Mensaje por defecto para salas
-- Documentos requeridos por defecto
-- Días de expiración del link
-- Notificaciones email
-
----
-
-### 7. Audit Logs Table
-
-**Ubicación**: `src/components/admin/audit-logs-table.tsx`
-
-**Columnas**:
-
-- Fecha/Hora
-- Usuario
-- Acción
-- Detalles
-- IP (opcional)
-
-**Acciones logueadas**:
-
-- Login/Logout
-- Crear/Editar/Eliminar cliente
-- Crear/Editar/Eliminar plantilla
-- Cambios de configuración
-- Invitaciones enviadas
-
----
-
-## Navegación Admin
-
-```typescript
-const navAdmin = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Usuarios", url: "/admin/usuarios", icon: Users },
-  { title: "Despacho", url: "/admin/despacho", icon: Building },
-  { title: "Configuración", url: "/admin/configuracion", icon: Settings },
-  { title: "Auditoría", url: "/admin/auditoria", icon: FileSearch },
-];
-```
-
----
-
-## Permisos
-
-### Acceso al Admin
-
-Solo visible si `profile.role` es `admin` o `super_admin`.
-
-### Middleware Check
-
-```typescript
-// middleware.ts o en layout
-if (!["admin", "super_admin"].includes(profile?.role)) {
-  redirect("/dashboard");
-}
-```
-
----
-
-## Verificación
-
-- [ ] Dashboard admin carga
-- [ ] Lista de usuarios funciona
-- [ ] Editar usuarios funciona
-- [ ] Invitar usuarios envía email
-- [ ] Configuración de despacho guarda
-- [ ] Configuración del sistema guarda
-- [ ] Audit logs filtrable
-- [ ] Solo admins pueden acceder
+| Elemento          | Owner                  | Lawyer           |
+| ----------------- | ---------------------- | ---------------- |
+| **Sidebar**       | Menu completo "Admin"  | Oculto           |
+| **Top Bar**       | Badge "Admin Mode" (?) | Badge "Member"   |
+| **User Dropdown** | "Configurar Org"       | "Solo Mi Perfil" |

@@ -1,67 +1,35 @@
 # Frontend Migration - Abogado Sala
 
-Este directorio contiene las instrucciones especializadas para la migración del frontend desde `sala-cliente` a `abogado-sala`.
+**ADN Arquitectónico y Roles de Usuario**.
 
-## Estructura de Agents
+## 🏛️ Definición de Actores
 
-| Archivo               | Propósito                                          |
-| --------------------- | -------------------------------------------------- |
-| `AGENTS.md`           | Este archivo - Instrucciones globales de frontend  |
-| `branding.md`         | Identidad visual, colores, tipografía              |
-| `foundation.md`       | Setup inicial: shadcn, dependencias, design tokens |
-| `auth-module.md`      | Módulo de autenticación                            |
-| `layout-module.md`    | Dashboard layout: sidebar, header                  |
-| `dashboard-module.md` | Contenido del dashboard                            |
-| `clients-module.md`   | Gestión de clientes                                |
-| `templates-module.md` | Plantillas de contratos y cuestionarios            |
-| `portal-module.md`    | Portal cliente (mobile-first)                      |
-| `admin-module.md`     | Panel de administración                            |
+- [**User Roles & Permissions**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/user-roles-permissions.md)
+- [**Route Map**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/route-map.md)
 
-## Skills Disponibles
+## 🏛️ Manifiesto Arquitectónico (Core)
 
-Usar las siguientes skills del directorio `.agent/skills/`:
+- [**Architecture & SOLID**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/architecture.md)
+- [**Ui Design Rules**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/ui-design-rules.md)
+- [**Branding**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/branding.md)
+- [**Security & Performance**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/security-performance.md)
 
-- **shadcn-ui**: Componentes y patrones de shadcn/ui
-- **shadcn-ui-expert**: Desarrollo avanzado con shadcn
-- **nextjs-shadcn-builder**: Construcción de apps Next.js con shadcn
-- **responsive-design**: Diseño responsive con container queries
-- **frontend-design**: Principios de diseño frontend
-- **frontend-ui-ux**: UX/UI profesional
-- **ui-ux-pro-max**: Estilos y paletas avanzadas
-- **react-best-practices**: Patrones de React
-- **nextjs-best-practices**: Patrones de Next.js App Router
+## 🏗️ Guías Técnicas
 
-## MCPs Disponibles
+- [**Realtime Strategy**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/realtime-strategy.md): **[NUEVO]** Websockets inteligentes y React Query.
+- [**Data Fetching**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/data-fetching-mutations.md)
+- [**State Management**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/state-management.md)
+- [**Error Handling**](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/error-handling-monitoring.md)
 
-- **shadcn**: CLI commands y ejemplos de shadcn
-- **shadcn-ui**: Componentes y bloques de shadcn/ui v4
+## 🧩 Implementación por Módulos
 
-## Reglas Globales
-
-### Performance First
-
-- Usar dynamic imports para componentes pesados
-- Implementar Suspense boundaries con skeletons
-- Lazy load de imágenes con next/image
-- Minimizar client components ("use client")
-
-### Mobile-First + Desktop-Adapted
-
-- Base styles = mobile
-- Progressive enhancement con breakpoints
-- Touch targets mínimo 44x44px en móvil
-- Container queries para componentes adaptativos
-
-### Accesibilidad
-
-- Usar componentes Radix UI (via shadcn)
-- Labels semánticas en formularios
-- Focus states visibles
-- Contraste WCAG AA mínimo
-
-### Código Limpio
-
-- TypeScript estricto
-- Componentes pequeños y enfocados
-- Naming conventions consistentes
-- Documentar props con JSDoc cuando necesario
+| Módulo            | Usuario Principal | Documento                                                                                                |
+| ----------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
+| **0. Foundation** | Dev               | [Setup & Config](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/foundation-module.md)   |
+| **1. Auth**       | Guest             | [Login/Registro](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/auth-module.md)         |
+| **2. Layout**     | Todos             | [Sidebar & Help](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/layout-module.md)       |
+| **3. Dashboard**  | Owner/Lawyer      | [Live Feed & Stats](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/dashboard-module.md) |
+| **4. Clients**    | Lawyer            | [CRM & Expedientes](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/clients-module.md)   |
+| **5. Portal**     | Client            | [Mobile App](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/portal-module.md)           |
+| **6. Templates**  | Lawyer/Admin      | [Flow Builder](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/templates-module.md)      |
+| **7. Admin**      | Owner             | [Gobernanza](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/frontend/admin-module.md)            |

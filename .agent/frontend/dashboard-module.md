@@ -1,223 +1,67 @@
 # Dashboard Module - Abogado Sala
 
-Contenido principal del dashboard: métricas, actividad y acciones rápidas.
+Visualización de KPIs y orquestación de datos.
 
-## Skills Requeridos
+## 1. Adaptación por Rol (Feature Toggling)
 
-- `shadcn-ui` → Cards y layouts
-- `react-best-practices` → Suspense boundaries
-- `responsive-design` → Grids adaptativos
+El Dashboard no es estático. Renderiza widgets según quién mira.
 
-## Referencia Original
+### Owner View ("El Jefe")
 
-`sala-cliente/src/app/(dashboard)/dashboard/` y `sala-cliente/src/components/dashboard/`
+- **KPIs Financieros** (si aplica) o Métricas Macro.
+- **Actividad Global**: "Juan (Abogado) creó expediente X".
+- **Estado del Sistema**: "Plan Pro - 80% almacenamiento usado".
+
+### Lawyer View ("El Operativo")
+
+- **KPIs Personales**: "Mis Expedientes Activos", "Tareas Pendientes".
+- **Accesos Rápidos**: "Nuevo Cliente", "Ver mis plantillas".
 
 ---
 
-## Páginas a Crear
+## 2. Widgets ("The Good Ideas from Legacy")
 
-### Dashboard Home
+### A. Live Activity Feed (Mejorado)
 
-**Ubicación**: `src/app/(dashboard)/dashboard/page.tsx`
+Inspirado en `recent-clients.tsx` del legacy, pero con Realtime real.
 
-**Estructura**:
+- **Componente**: `ActivityTimeline`.
+- **Behavior**: Scroll infinito virtualizado.
+- **Realtime**: Nuevos eventos entran con animación `AnimatePresence`.
+
+### B. Quick Actions (Mejorado)
+
+Inspirado en `quick-actions.tsx`.
+
+- Botones grandes con iconos y atajos de teclado (`N` para Nuevo cliente).
+- "Magic Search": Un input estilo `Cmd+K` para buscar cualquier expediente al instante.
+
+---
+
+## 3. Implementación Técnica (`DashboardPage.tsx`)
 
 ```tsx
-<div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
-  {/* Header */}
-  <div>
-    <h1 className="text-2xl font-bold tracking-tight">Panel Principal</h1>
-    <p className="text-muted-foreground">
-      Bienvenido de vuelta. Aquí tienes un resumen de tu actividad.
-    </p>
-  </div>
+async function DashboardPage() {
+  const user = await getCurrentUser();
+  const role = user.role; // 'admin' | 'lawyer'
 
-  {/* Metrics */}
-  <Suspense fallback={<MetricCardsSkeleton />}>
-    <MetricCards stats={stats} />
-  </Suspense>
-
-  {/* Content Grid */}
-  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-    <div className="lg:col-span-2">
-      <Suspense fallback={<RecentClientsSkeleton />}>
-        <RecentClients clients={stats?.recentActivity || []} />
-      </Suspense>
-    </div>
-    <QuickActions />
-  </div>
-</div>
-```
-
----
-
-## Componentes del Dashboard
-
-### 1. Metric Cards
-
-**Ubicación**: `src/components/dashboard/metric-cards.tsx`
-
-**Métricas a mostrar**:
-| Métrica | Icono | Descripción |
-|---------|-------|-------------|
-| Total Clientes | `Users` | Total de salas creadas |
-| Completadas | `FileCheck` | Salas finalizadas |
-| Pendientes | `Clock` | En proceso |
-| Tasa Completado | `TrendingUp` | % de éxito |
-
-**Grid Responsive**:
-
-```tsx
-<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-  {metrics.map((metric) => (
-    <Card key={metric.title}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{metric.title}</CardTitle>
-        <metric.icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{metric.value}</div>
-        <p className="text-xs text-muted-foreground">{metric.description}</p>
-      </CardContent>
-    </Card>
-  ))}
-</div>
-```
-
----
-
-### 2. Recent Clients
-
-**Ubicación**: `src/components/dashboard/recent-clients.tsx`
-
-**Estructura**:
-
-```
-Card
-├── CardHeader
-│   └── CardTitle "Actividad Reciente"
-└── CardContent
-    └── Lista de clientes recientes
-        ├── Avatar
-        ├── Nombre + Caso
-        ├── Fecha
-        └── Badge de estado
-```
-
-**Responsive**:
-
-- Mobile: Stack vertical compacto
-- Desktop: Lista con más detalles
-
----
-
-### 3. Quick Actions
-
-**Ubicación**: `src/components/dashboard/quick-actions.tsx`
-
-**Acciones**:
-
-```tsx
-const actions = [
-  {
-    title: "Nuevo Cliente",
-    description: "Crear sala de bienvenida",
-    href: "/clientes/nuevo",
-    icon: UserPlus,
-  },
-  {
-    title: "Ver Clientes",
-    description: "Gestionar clientes activos",
-    href: "/clientes",
-    icon: Users,
-  },
-];
-```
-
----
-
-### 4. Skeletons
-
-Cada componente necesita su skeleton:
-
-```tsx
-function MetricCardsSkeleton() {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-8 w-16 mb-1" />
-            <Skeleton className="h-3 w-full" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-```
+    <div className="grid gap-4">
+      {/* Zona Común */}
+      <WelcomeHeader user={user} />
 
----
+      {/* Diferenciación */}
+      {role === "admin" ? (
+        <AdminStatsTiles orgId={user.orgId} />
+      ) : (
+        <LawyerPersonalStats userId={user.id} />
+      )}
 
-## Patrón de Página Estándar
-
-Todas las páginas del dashboard siguen este patrón:
-
-```tsx
-export default function SomePage() {
-  return (
-    <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
-      {/* Header Section */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Título</h1>
-        <p className="text-muted-foreground">Descripción</p>
+      <div className="grid md:grid-cols-2 gap-4">
+        <LiveActivityFeed scope={role} />
+        <QuickActionsPanel />
       </div>
-
-      {/* Content */}
-      <Content />
     </div>
   );
 }
 ```
-
----
-
-## Páginas Adicionales
-
-### Ayuda
-
-`src/app/(dashboard)/ayuda/page.tsx`
-
-- Accordion con FAQ
-- Links a documentación
-- Contacto de soporte
-
-### Mi Cuenta
-
-`src/app/(dashboard)/mi-cuenta/page.tsx`
-
-- Formulario de perfil
-- Cambiar contraseña
-- Avatar upload
-
-### Preferencias
-
-`src/app/(dashboard)/preferencias/page.tsx`
-
-- Theme selector
-- Notificaciones
-- Idioma
-
----
-
-## Verificación
-
-- [ ] Métricas se cargan con Suspense
-- [ ] Skeletons aparecen durante carga
-- [ ] Grid responsive funciona
-- [ ] Acciones rápidas navegables
-- [ ] Estados vacíos manejados

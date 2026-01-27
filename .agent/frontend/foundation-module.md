@@ -1,98 +1,106 @@
 # Foundation Module - Abogado Sala
 
-Setup inicial del proyecto con shadcn/ui, dependencias y design tokens.
+Setup inicial del proyecto con shadcn/ui. **ESTE ARCHIVO ES LA ÚNICA FUENTE DE VERDAD PARA `globals.css`**.
 
-## Skills Requeridos
-
-- `shadcn-ui` → Instalación y configuración
-- `shadcn-ui-expert` → Patrones avanzados
-- `nextjs-shadcn-builder` → Integración Next.js
-
-## MCPs a Usar
-
-```
-mcp_shadcn_get_add_command_for_items → Comandos de instalación
-mcp_shadcn-ui_list_components → Lista de componentes disponibles
-```
-
----
-
-## Checklist de Implementación
-
-### 1. Dependencias
+## 1. Dependencias Críticas
 
 ```bash
-npm install @hookform/resolvers @radix-ui/react-accordion @radix-ui/react-alert-dialog @radix-ui/react-avatar @radix-ui/react-checkbox @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-label @radix-ui/react-progress @radix-ui/react-scroll-area @radix-ui/react-select @radix-ui/react-separator @radix-ui/react-slot @radix-ui/react-switch @radix-ui/react-tabs @radix-ui/react-tooltip class-variance-authority clsx lucide-react next-themes react-hook-form sonner tailwind-merge vaul zod
-
-npm install -D tw-animate-css
+npm install next-themes sonner lucide-react clsx tailwind-merge
+npm install -D tailwindcss-animate
 ```
 
-### 2. Inicializar shadcn/ui
+## 2. Configuración de Colores (Single Source of Truth)
 
-```bash
-npx shadcn@latest init
-# Seleccionar: new-york style, neutral base color, CSS variables
-```
+Toda la UI debe consumir estas variables. **Prohibido usar colores arbitrarios** (ej. `bg-[#123456]`).
 
-### 3. Crear components.json
+### `src/app/globals.css`
 
-```json
-{
-  "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
-  "rsc": true,
-  "tsx": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/app/globals.css",
-    "baseColor": "neutral",
-    "cssVariables": true,
-    "prefix": ""
-  },
-  "iconLibrary": "lucide",
-  "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
-  }
-}
-```
-
-### 4. Crear src/lib/utils.ts
-
-```typescript
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-```
-
-### 5. Actualizar globals.css
-
-Ver `branding.md` para la paleta de colores completa.
-
-Estructura requerida:
+Copia exacta para producción. Usamos **OKLCH** para consistencia perceptual.
 
 ```css
 @import "tailwindcss";
-@import "tw-animate-css";
+
+@plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  /* Mapeo de variables CSS a Tailwind */
-}
-
 :root {
-  /* Variables Light Mode */
+  /* Brand Colors (Professional Blue) */
+  --primary: 250 0.1 0.25; /* Deep Trust Blue */
+  --primary-foreground: 0 0 0.98; /* White */
+
+  --secondary: 250 0.05 0.96; /* Ice Blue (Muted) */
+  --secondary-foreground: 250 0.1 0.25;
+
+  --accent: 250 0.15 0.6; /* Electric Action Blue */
+  --accent-foreground: 0 0 0.98;
+
+  /* Neutrals (Slate-tinted) */
+  --background: 0 0 1;
+  --foreground: 250 0.05 0.15;
+
+  --card: 0 0 1;
+  --card-foreground: 250 0.05 0.15;
+
+  --popover: 0 0 1;
+  --popover-foreground: 250 0.05 0.15;
+
+  --muted: 250 0.02 0.96;
+  --muted-foreground: 250 0.02 0.45;
+
+  /* Borders & feedback */
+  --border: 250 0.02 0.9;
+  --input: 250 0.02 0.9;
+  --ring: 250 0.1 0.25;
+
+  --destructive: 25 0.2 0.4; /* Error Red */
+  --destructive-foreground: 0 0 0.98;
+
+  --radius: 0.5rem;
 }
 
 .dark {
-  /* Variables Dark Mode */
+  /* Dark Mode Overrides (Deep Navy) */
+  --background: 250 0.05 0.12;
+  --foreground: 0 0 0.98;
+
+  --card: 250 0.05 0.14;
+  --card-foreground: 0 0 0.98;
+
+  --popover: 250 0.05 0.14;
+  --popover-foreground: 0 0 0.98;
+
+  --muted: 250 0.05 0.2;
+  --muted-foreground: 250 0.02 0.65;
+
+  --border: 250 0.05 0.2;
+  --input: 250 0.05 0.2;
+  --ring: 250 0.1 0.6;
+}
+
+@theme inline {
+  --color-background: oklch(var(--background));
+  --color-foreground: oklch(var(--foreground));
+  --color-card: oklch(var(--card));
+  --color-card-foreground: oklch(var(--card-foreground));
+  --color-popover: oklch(var(--popover));
+  --color-popover-foreground: oklch(var(--popover-foreground));
+  --color-primary: oklch(var(--primary));
+  --color-primary-foreground: oklch(var(--primary-foreground));
+  --color-secondary: oklch(var(--secondary));
+  --color-secondary-foreground: oklch(var(--secondary-foreground));
+  --color-muted: oklch(var(--muted));
+  --color-muted-foreground: oklch(var(--muted-foreground));
+  --color-accent: oklch(var(--accent));
+  --color-accent-foreground: oklch(var(--accent-foreground));
+  --color-destructive: oklch(var(--destructive));
+  --color-destructive-foreground: oklch(var(--destructive-foreground));
+  --color-border: oklch(var(--border));
+  --color-input: oklch(var(--input));
+  --color-ring: oklch(var(--ring));
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius));
+  --radius-lg: calc(var(--radius) + 2px);
 }
 
 @layer base {
@@ -105,73 +113,21 @@ Estructura requerida:
 }
 ```
 
-### 6. Instalar Componentes Base
+## 3. Utilidades (`src/lib/utils.ts`)
 
-```bash
-npx shadcn@latest add button card input label form dialog alert-dialog dropdown-menu avatar badge skeleton tabs tooltip separator scroll-area select switch checkbox textarea accordion progress table sheet drawer sidebar breadcrumb
-```
+```typescript
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-### 7. Crear Theme Provider
-
-```
-src/components/theme/
-├── index.ts
-├── theme-provider.tsx    # next-themes wrapper
-├── theme-switcher.tsx    # Toggle light/dark
-└── dynamic-theme.tsx     # Runtime CSS vars
-```
-
-### 8. Actualizar Root Layout
-
-```tsx
-// src/app/layout.tsx
-import { ThemeProvider } from "@/components/theme";
-import { Toaster } from "sonner";
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="es" suppressHydrationWarning>
-      <body className={`${fonts} antialiased`}>
-        <ThemeProvider>
-          {children}
-          <Toaster richColors />
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
 ```
 
 ---
 
-## Estructura de Archivos Resultante
+## 4. Verificación de Integridad
 
-```
-src/
-├── app/
-│   ├── globals.css        # Design tokens
-│   ├── layout.tsx         # Root layout con providers
-│   └── page.tsx           # Landing page
-├── components/
-│   ├── ui/                # Componentes shadcn
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   └── ... (31 componentes)
-│   └── theme/
-│       ├── index.ts
-│       ├── theme-provider.tsx
-│       └── theme-switcher.tsx
-├── lib/
-│   └── utils.ts           # cn() utility
-└── hooks/
-    └── (hooks compartidos)
-```
-
----
-
-## Verificación
-
-- [ ] `npm run build` sin errores
-- [ ] Theme toggle funciona (light/dark)
-- [ ] Variables CSS aplicadas correctamente
-- [ ] Componentes shadcn importables
+- [ ] Tailwind Intellisense funciona y autocompleta `bg-primary`.
+- [ ] No existen colores `hex` en ningún componente.
+- [ ] Dark mode invierte correctamente los colores sin parpadeos (`suppressHydrationWarning` en `html`).
