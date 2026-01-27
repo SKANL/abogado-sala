@@ -64,10 +64,11 @@ OR
 Estructura: `/{org_id}/{case_id}/{file.pdf}`
 
 - **INSERT (Upload)**:
-  - Client (Guest): Permitido si tiene Token válido de Case (Logica Edge Function o Signed View).
   - Lawyer: Permitido si tiene acceso al Case (RLS check).
+  - **Portal (Client)**: **Vía Signed Upload URL**. El cliente solicita URL al Backend (Server Action), el cual valida el token y permisos antes de generar la URL firmada. NO se permite insert directo `anon`.
 - **SELECT (Download)**:
-  - Solo Authenticated Users con acceso al Case (check DB).
+  - Lawyer: Authenticated Users con acceso al Case (check DB).
+  - **Portal (Client)**: Vía Signed Download URL (mismo mecanismo).
 
 ---
 

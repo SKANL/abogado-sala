@@ -28,11 +28,13 @@ create table profiles (
 create table clients (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id),
-  assigned_lawyer_id uuid references profiles(id), -- Nullable if unassigned initially? Assuming optional assignment.
+  assigned_lawyer_id uuid references profiles(id) on delete set null, -- Fix: Prevent crash on user deletion
   full_name text not null,
+  email text,
   email text,
   phone text,
   status client_status not null default 'prospect',
+  unique(org_id, email), -- Prevent duplicate clients in same org
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -46,6 +48,7 @@ create table cases (
   current_step_index int not null default 0,
   token text not null unique,
   status case_status not null default 'draft',
+  expires_at timestamptz, -- Security: Optional expiration for portal access
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -79,7 +82,7 @@ create table templates (
 create table audit_logs (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id),
-  actor_id uuid references auth.users(id), -- Can be null if system action? Keeping basic FK.
+  actor_id uuid references auth.users(id) on delete set null, -- Safety: Don't block user deletion, preserve log exists
   action text not null,
   target_id uuid,
   metadata jsonb default '{}'::jsonb,
