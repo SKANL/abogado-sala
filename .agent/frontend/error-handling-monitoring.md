@@ -35,8 +35,15 @@ Los Server Actions nunca deben lanzar excepciones (throw) al cliente para contro
 if (!user) throw new Error("No existe");
 
 // ✅ Bien
-if (!user) return { success: false, error: "Usuario no encontrado" };
+if (!user)
+  return {
+    success: false,
+    error: "Usuario no encontrado",
+    code: "VAL_NOT_FOUND",
+  };
 ```
+
+> **Referencia**: Ver `backend/backend-contracts.md` -> **Diccionario de Errores** para la lista oficial de códigos (`VAL_DEPENDENCY_EXISTS`, `AUTH_FORBIDDEN`, etc).
 
 ---
 

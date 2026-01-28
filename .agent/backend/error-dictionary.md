@@ -4,12 +4,13 @@ Contrato estandarizado de códigos de error (`Result<T>.code`) y su interpretaci
 
 ## 1. Authentication & Integrity (`AUTH_`)
 
-| Code                | Message (Internal)                | UI Feedback (Usuario)             | Acción UI                 |
-| :------------------ | :-------------------------------- | :-------------------------------- | :------------------------ |
-| `AUTH_UNAUTHORIZED` | "Session invalid or missing"      | "Tu sesión ha expirado"           | Redirect `/login`         |
-| `AUTH_FORBIDDEN`    | "User role insufficient"          | "No tienes permiso para ver esto" | Mostrar 403 / Toast Error |
-| `AUTH_ORG_MISMATCH` | "Resource belongs to another org" | "Acceso denegado a este recurso"  | Redirect Dashboard        |
-| `AUTH_ZOMBIE_TOKEN` | "User deleted or banned"          | "Cuenta deshabilitada"            | Force Logout              |
+| Code                | Message (Internal)                | UI Feedback (Usuario)                | Acción UI                 |
+| :------------------ | :-------------------------------- | :----------------------------------- | :------------------------ |
+| `AUTH_UNAUTHORIZED` | "Session invalid or missing"      | "Tu sesión ha expirado"              | Redirect `/login`         |
+| `AUTH_FORBIDDEN`    | "User role insufficient"          | "No tienes permiso para ver esto"    | Mostrar 403 / Toast Error |
+| `AUTH_ORG_MISMATCH` | "Resource belongs to another org" | "Acceso denegado a este recurso"     | Redirect Dashboard        |
+| `AUTH_ZOMBIE_TOKEN` | "User deleted or banned"          | "Cuenta deshabilitada"               | Force Logout              |
+| `AUTH_LAST_ADMIN`   | "Cannot delete last admin"        | "No puedes eliminar el último admin" | Toast Error               |
 
 ## 2. Billing & Quotas (`BILLING_`)
 

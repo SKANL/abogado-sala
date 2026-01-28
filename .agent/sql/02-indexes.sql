@@ -9,6 +9,8 @@ create index clients_org_id_idx on clients(org_id);
 create index clients_assigned_lawyer_id_idx on clients(assigned_lawyer_id);
 -- Compound for common lookup: All clients for a lawyer in an org (though RLS handles security, index helps speed)
 create index clients_org_lawyer_idx on clients(org_id, assigned_lawyer_id);
+-- Filter by status (Dashboard Tabs)
+create index clients_status_idx on clients(status);
 -- Fuzzy search for name
 create index clients_name_trgm_idx on clients using gist (full_name gist_trgm_ops);
 
@@ -31,11 +33,21 @@ create index audit_logs_target_id_idx on audit_logs(target_id);
 
 -- 7. Invitations
 create index invitations_email_idx on invitations(email);
+create index invitations_org_id_idx on invitations(org_id); -- Fix: Required for RLS
+create index invitations_token_idx on invitations(token); -- Fix: Required for get_invitation_by_token RPC
 
--- 8. Portal Analytics
+-- 8. Subscriptions
+create index subscriptions_org_id_idx on subscriptions(org_id); -- Fix: Required for RLS
+
+-- 9. Portal Analytics
 create index portal_analytics_case_id_idx on portal_analytics(case_id);
 create index portal_analytics_created_at_idx on portal_analytics(created_at desc);
 
--- 9. Notifications
+-- 10. Notifications
 create index notifications_user_read_idx on notifications(user_id, read) where read = false; -- Target unread counts
 create index notifications_org_id_idx on notifications(org_id);
+
+-- 11. Composite Indexes for RLS Performance
+-- Optimize nested EXISTS queries in case_files RLS policies
+create index cases_client_org_idx on cases(client_id, org_id);
+create index clients_id_lawyer_idx on clients(id, assigned_lawyer_id);

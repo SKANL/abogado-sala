@@ -16,6 +16,10 @@ create policy "Users can view their own organization"
   on organizations for select
   using (id = auth.org_id());
 
+create policy "Authenticated users insert organizations"
+  on organizations for insert
+  with check (auth.role() = 'authenticated');
+
 create policy "Admins can update their organization"
   on organizations for update
   using (id = auth.org_id() and auth.is_admin());
@@ -33,14 +37,34 @@ create policy "Admins can update any profile in their organization"
   on profiles for update
   using (org_id = auth.org_id() and auth.is_admin());
 
+create policy "Users can insert their own profile"
+  on profiles for insert
+  with check (id = auth.uid());
+
 -- 4. Clients Policies
 -- Admin sees all in Org. Member sees only assigned.
-create policy "Access Clients"
-  on clients for all
+-- Fix: Split `for all` into explicit policies (using() doesn't apply to INSERT)
+
+create policy "Select Clients"
+  on clients for select
   using (
     (auth.is_admin() and org_id = auth.org_id())
     or
     (assigned_lawyer_id = auth.uid())
+  );
+
+create policy "Update Clients"
+  on clients for update
+  using (
+    (auth.is_admin() and org_id = auth.org_id())
+    or
+    (assigned_lawyer_id = auth.uid())
+  );
+
+create policy "Delete Clients"
+  on clients for delete
+  using (
+    auth.is_admin() and org_id = auth.org_id()
   );
 
 create policy "Members can insert clients"
@@ -51,15 +75,10 @@ create policy "Members can insert clients"
 
 -- 5. Cases Policies
 -- Inherits logic from Clients essentially, but direct check for speed (denormalized org_id)
--- Using same logic: Admin sees all in Org, Member sees assigned clients' cases.
--- NOTE: We need to JOIN to check assignment if we only checked case table, 
--- but we have org_id on Case. For assignment check, we'd need to know if the client is assigned.
--- However, strict requirement was: "User Level Scope". 
--- If a case belongs to a client assigned to me, I see it.
--- We can simplify by assuming if I can see the Client, I can see the Case.
--- 5. Cases Policies
-create policy "Access Cases"
-  on cases for all
+-- Fix: Split `for all` into explicit policies
+
+create policy "Select Cases"
+  on cases for select
   using (
     (auth.is_admin() and org_id = auth.org_id())
     or
@@ -70,7 +89,24 @@ create policy "Access Cases"
     )
   );
 
--- Fix: C4. Falta política INSERT para `cases`
+create policy "Update Cases"
+  on cases for update
+  using (
+    (auth.is_admin() and org_id = auth.org_id())
+    or
+    exists (
+      select 1 from clients 
+      where clients.id = cases.client_id 
+      and clients.assigned_lawyer_id = auth.uid()
+    )
+  );
+
+create policy "Delete Cases"
+  on cases for delete
+  using (
+    auth.is_admin() and org_id = auth.org_id()
+  );
+
 create policy "Insert Cases"
   on cases for insert
   with check (
@@ -90,18 +126,68 @@ create policy "Insert Cases"
 -- 6. Case Files Policies
 -- Access if user has access to the Case.
 create policy "Access Case Files"
-  on case_files for all
+  on case_files for select using (
+    (auth.is_admin() and org_id = auth.org_id()) -- Fast Path for Admins (Avoid Joins)
+    or
+    exists (
+      select 1 from cases
+      where cases.id = case_files.case_id
+      and (
+        -- Admin check redundant here due to fast path above, keeping for safety fallback
+        (auth.is_admin() and cases.org_id = auth.org_id()) 
+        or
+        exists (
+            select 1 from clients
+            where clients.id = cases.client_id
+            and clients.assigned_lawyer_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- Fix: Missing INSERT policy for case_files (would block uploads)
+create policy "Insert Case Files"
+  on case_files for insert
+  with check (
+    org_id = auth.org_id()
+    and exists (
+      select 1 from cases
+      where cases.id = case_files.case_id
+      and cases.org_id = auth.org_id()
+    )
+  );
+
+-- Fix: Allow UPDATE on case_files (for confirmUploadAction)
+create policy "Update Case Files"
+  on case_files for update
   using (
     exists (
       select 1 from cases
       where cases.id = case_files.case_id
       and (
         (auth.is_admin() and cases.org_id = auth.org_id())
-        or
-        exists (
-            select 1 from clients
-            where clients.id = cases.client_id
-            and clients.assigned_lawyer_id = auth.uid()
+        or exists (
+          select 1 from clients
+          where clients.id = cases.client_id
+          and clients.assigned_lawyer_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- Fix: Allow DELETE on case_files (for cleanup)
+create policy "Delete Case Files"
+  on case_files for delete
+  using (
+    exists (
+      select 1 from cases
+      where cases.id = case_files.case_id
+      and (
+        (auth.is_admin() and cases.org_id = auth.org_id())
+        or exists (
+          select 1 from clients
+          where clients.id = cases.client_id
+          and clients.assigned_lawyer_id = auth.uid()
         )
       )
     )
@@ -163,7 +249,10 @@ alter table portal_analytics enable row level security;
 -- Allow Anon/Auth to insert analytics (logging)
 create policy "Public insert portal analytics"
   on portal_analytics for insert
-  with check (true);
+  with check (
+    -- Anti-Spam: Must reference a valid case
+    exists (select 1 from cases where id = case_id)
+  );
 
 -- Fix: C5. Falta política SELECT para `portal_analytics`
 create policy "Admins view portal analytics"
@@ -191,7 +280,17 @@ create policy "Authenticated read plan configs"
 -- 14. Notifications (New)
 alter table notifications enable row level security;
 
-create policy "Users manage own notifications"
-  on notifications for all
+create policy "Users view own notifications"
+  on notifications for select
   using (user_id = auth.uid());
+
+create policy "Users update own notifications (mark read)"
+  on notifications for update
+  using (user_id = auth.uid());
+  
+-- INSERT Denied for users (System-only via Triggers)
+
+-- 15. Rate Limits (System-Only Table)
+-- Already has RLS enabled in 01-tables.sql
+-- No policies = Deny all (only security definer functions can access)
 

@@ -83,7 +83,7 @@ Si el usuario está en otra pestaña, mostrar un Toast: "Juan acaba de firmar el
 
 ### Dashboard (`LiveFeed`)
 
-- Suscribirse a `activity_logs` con filtro `owner_id = me`.
+- Suscribirse a `audit_logs` con filtro `actor_id = me`.
 - Al recibir evento `INSERT`:
   - Agregar item al tope de la lista con animación `slide-down`.
 

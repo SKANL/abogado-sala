@@ -17,7 +17,7 @@ begin
   -- 1. Check Requester Permissions
   select org_id into v_requester_org from public.profiles where id = auth.uid();
   
-  if not public.auth.is_admin() then
+  if not auth.is_admin() then
     raise exception 'Access Denied: Only Admins can remove members.';
   end if;
 
@@ -138,6 +138,93 @@ begin
   from public.invitations i
   join public.organizations o on o.id = i.org_id
   where i.token = p_token
+  and i.status = 'pending'  -- Fix: Only allow pending invitations
   and i.expires_at > now();
+end;
+$$;
+
+-- 4. Transactional File Upload Confirmation
+-- Called by confirmUploadAction after successful storage upload
+-- Validates ownership and updates file status atomically
+create or replace function public.confirm_file_upload(
+  p_file_id uuid,
+  p_file_size bigint,
+  p_file_key text
+)
+returns public.case_files
+language plpgsql
+security definer
+as $$
+declare
+  v_file public.case_files;
+  v_org_id uuid;
+begin
+  -- VALIDATION: Prevent negative sizes and empty keys
+  if p_file_size <= 0 then
+    raise exception 'Invalid file size: must be positive';
+  end if;
+  
+  if p_file_key is null or length(trim(p_file_key)) = 0 then
+    raise exception 'Invalid file key: cannot be empty';
+  end if;
+
+  -- 1. Get file and verify ownership via RLS context
+  select cf.*, c.org_id into v_file, v_org_id
+  from public.case_files cf
+  join public.cases c on c.id = cf.case_id
+  where cf.id = p_file_id
+  and c.org_id = auth.org_id()
+  and (
+    auth.is_admin()
+    or exists (
+      select 1 from public.clients cl
+      where cl.id = c.client_id
+      and cl.assigned_lawyer_id = auth.uid()
+    )
+  );
+
+  if v_file is null then
+    raise exception 'File not found or access denied';
+  end if;
+
+  -- 2. Update file status and metadata
+  update public.case_files
+  set 
+    status = 'uploaded',
+    file_size = p_file_size,
+    file_key = p_file_key,
+    updated_at = now()
+  where id = p_file_id
+  returning * into v_file;
+
+  return v_file;
+end;
+$$;
+
+-- 5. Get Invitation Details (For Authenticated Admins)
+-- Called by getInvitationAction to validate invitation tokens
+-- Uses RLS to ensure org_id matches
+create or replace function public.get_invitation(p_token text)
+returns table (
+  id uuid,
+  email text,
+  role user_role,
+  status invitation_status,
+  expires_at timestamptz
+)
+language plpgsql
+security invoker  -- Uses RLS policies
+as $$
+begin
+  return query
+  select 
+    i.id,
+    i.email,
+    i.role,
+    i.status,
+    i.expires_at
+  from public.invitations i
+  where i.token = p_token;
+  -- RLS ensures org_id = auth.org_id() and auth.is_admin()
 end;
 $$;

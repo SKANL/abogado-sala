@@ -8,8 +8,8 @@ Mobile-First Client Experience.
 sequenceDiagram
     Client->>Email: Click Magic Link
     Email->>Server: GET /sala/[token]
-    Server->>DB: Validate Token -> Fetch Template Config
-    alt Valid
+    Server->>DB: getCaseByTokenAction(token) -> RPC get_case_by_token
+    alt Valid & Not Expired
         Server-->>Client: Render Steps based on Template Schema
     else Invalid
         Server-->>Client: Redirect /sala/error

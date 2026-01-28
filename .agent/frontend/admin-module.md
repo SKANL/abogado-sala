@@ -19,7 +19,13 @@ Este módulo es una "Area VIP". Todo componente aquí asume que el usuario es `A
    - **UI**:
      - Tabla "Invitaciones Pendientes" con botón "Revocar" o "Reenviar".
      - Al aceptar, el sistema convierte la `invitation` en un `profile` + `auth.user` y borra/archiva la invitación.
-2. **Monitoreo de Actividad**:
+
+2. **Gestión de Miembros (Bajas)**:
+   - **Acción**: `removeMemberAction(userId)`.
+   - **Backend**: Ejecuta `remove_org_member()` (DB Soft Delete) + `supabase.auth.admin.deleteUser()` (Auth Hard Ban).
+   - **Resultado**: El usuario pierde acceso inmediato (Token invalidado).
+
+3. **Monitoreo de Actividad**:
    - Owner ve tabla "Actividad Reciente".
    - Filtro: "Ver actividad de [Abogado Jr.]".
    - Dato: "Abogado Jr. creó el expediente X".
@@ -38,7 +44,6 @@ Este módulo es una "Area VIP". Todo componente aquí asume que el usuario es `A
 ### C. Métricas de Negocio
 
 - "Clientes Totales" (Global).
-- "Expedientes Cerrados este mes" (Global).
 - "Expedientes Cerrados este mes" (Global).
 - "Almacenamiento usado" (Global).
 
