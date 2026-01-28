@@ -65,9 +65,9 @@ Todas las mutaciones deben respetar la interfaz `Result<T>` definida en `fronten
 | `markNotificationReadAction`  | `{ notificationIds: string[] }`                     | `void`                                 | Marca notificaciones como leídas (Batch support para Sync eficiente).                              |
 | `getOrganizationConfigAction` | `{}`                                                | `{ tier: string, limits: PlanConfig }` | Obtiene configuración y límites de uso del plan actual (Anti-Hardcoding).                          |
 | `regenerateCaseTokenAction`   | `{ caseId: string }`                                | `string`                               | Rota el token de acceso al Portal (Seguridad).                                                     |
-| `logPortalAccessAction`       | `{ token: string, event: string, step?: number}`    | `void`                                 | Registra analítica de visita (RPC `log_portal_access`).                                            |
+| `logPortalAccessAction`       | `{ token: string, event: PortalEvent, ...}`         | `void`                                 | Registra analítica. Eventos: `view`, `download`, `print`, `complete`, `exception`.                 |
 | `updateOrganizationAction`    | `{ name?: string, color?: string, logo?: string }`  | `Organization`                         | Modifica branding y datos de la Org. (Requiere RLS Admin).                                         |
-| `removeMemberAction`          | `{ userId: string }`                                | `void`                                 | Elimina miembro de la Org (Soft Delete + Auth Ban).                                                |
+| `removeMemberAction`          | `{ userId: string }`                                | `void`                                 | Suspende acceso del miembro (Soft Delete: `status='suspended'`).                                   |
 | `updateCaseAction`            | `updateCaseSchema`                                  | `Case`                                 | Actualiza estado y progreso del caso.                                                              |
 | `createStripeCheckoutAction`  | `{ plan: 'pro'                                      | 'enterprise' }`                        | `{ url: string }`                                                                                  | Genera sesión de Checkout de Stripe. |
 | `createStripePortalAction`    | `{}`                                                | `{ url: string }`                      | Genera sesión de Customer Portal de Stripe.                                                        |
@@ -106,7 +106,7 @@ z.object({
 ```typescript
 z.object({
   client_id: z.string().uuid("Cliente requerido"),
-  template_snapshot: z.record(z.any()).optional(), // JSONB
+  template_snapshot: z.record(z.any()).optional(), // JSONB. WARNING: Must validate against FileCategoryEnum
   status: z.enum(["draft", "in_progress"]).default("draft"),
 });
 ```
@@ -119,6 +119,27 @@ z.object({
   status: z.enum(["draft", "in_progress", "review", "completed"]),
   current_step_index: z.number().int().min(0).optional(),
 });
+```
+
+### `sharedEnums` (Integrity Constraints)
+
+```typescript
+export const FileCategoryEnum = z.enum([
+  "DNI",
+  "Contrato",
+  "Escritura",
+  "Poder",
+  "Otro",
+  "Factura",
+  "Sentencia",
+]);
+export const PortalEventEnum = z.enum([
+  "view",
+  "download",
+  "print",
+  "complete",
+  "exception",
+]);
 ```
 
 ---
@@ -204,3 +225,24 @@ Los eventos críticos (Upload, Firma) deben insertarse en la tabla `notification
 
 - Trigger: `INSERT` en `notifications`.
 - Client: Fetch inicial de `notifications` no leídas.
+
+---
+
+## 10. SRE Performance Protocols
+
+### 10.1. Zero N+1 Policy
+
+**Strict Rule**: No loop-based database queries are permitted.
+
+- **Bad**: Iterating over `clients` and fetching `cases` one by one.
+- **Good**: Use `select('*, cases(*)')` relational queries or manual ID aggregation `in (...)`.
+
+### 10.2. Latency Budgets
+
+- **API Response**: < 100ms for P95 (Cached), < 300ms for P95 (Uncached Database Write).
+- **Cold Starts**: Minimize Edge Function dependency chains to keep cold starts < 1s.
+
+### 10.3. Atomic Data Fetching
+
+- **Composite Fetching**: Screens should ideally require **1 network request** to load critical state.
+- Use composite endpoints or advanced Supabase query chaining to retrieve User + Org + Clients in a single payload where possible.

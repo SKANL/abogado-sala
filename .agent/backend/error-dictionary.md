@@ -15,13 +15,14 @@ Contrato estandarizado de códigos de error (`Result<T>.code`) y su interpretaci
 
 ## 2. Billing & Quotas (`BILLING_`)
 
-| Code                      | Message (Internal)             | UI Feedback (Usuario)                            | Acción UI                          |
-| :------------------------ | :----------------------------- | :----------------------------------------------- | :--------------------------------- |
-| `BILLING_QUOTA_CLIENTS`   | "Active clients quota reached" | "Has alcanzado el límite de clientes de tu plan" | Modal "Upgrade Plan"               |
-| `BILLING_QUOTA_STORAGE`   | "Storage limit exceeded"       | "Espacio de almacenamiento lleno (5GB)"          | Modal "Liberar Espacio"            |
-| `BILLING_PAST_DUE`        | "Subscription past due"        | "Hay un problema con tu pago"                    | Redirect `/billing`                |
-| `BILLING_TRIAL_EXPIRED`   | "Trial period finished"        | "Tu periodo de prueba ha finalizado"             | Redirect `/billing` (Paywall)      |
-| `BILLING_DOWNGRADE_BLOCK` | "Usage exceeds target plan"    | "Debes reducir uso antes de bajar de plan"       | Mostrar lista de recursos a borrar |
+| Code                            | Message (Internal)             | UI Feedback (Usuario)                            | Acción UI                          |
+| :------------------------------ | :----------------------------- | :----------------------------------------------- | :--------------------------------- |
+| `BILLING_QUOTA_CLIENTS`         | "Active clients quota reached" | "Has alcanzado el límite de clientes de tu plan" | Modal "Upgrade Plan"               |
+| `BILLING_QUOTA_STORAGE`         | "Storage limit exceeded"       | "Espacio de almacenamiento lleno (5GB)"          | Modal "Liberar Espacio"            |
+| `BILLING_SUBSCRIPTION_INACTIVE` | "Subscription inactive/unpaid" | "Tu suscripción no está activa"                  | Redirect `/billing`                |
+| `BILLING_PAST_DUE`              | "Subscription past due"        | "Hay un problema con tu pago"                    | Redirect `/billing`                |
+| `BILLING_TRIAL_EXPIRED`         | "Trial period finished"        | "Tu periodo de prueba ha finalizado"             | Redirect `/billing` (Paywall)      |
+| `BILLING_DOWNGRADE_BLOCK`       | "Usage exceeds target plan"    | "Debes reducir uso antes de bajar de plan"       | Mostrar lista de recursos a borrar |
 
 ## 3. Validation & Logic (`VAL_`)
 

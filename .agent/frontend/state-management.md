@@ -95,3 +95,23 @@ Indicadores visuales obligatorios en el header del Wizard:
 - 🟡 "Guardando..." (Network request in flight).
 - 🟠 "Guardado localmente" (Offline / Pending Sync).
 - 🔴 "Error al guardar" (Validation Error).
+
+---
+
+## 4. Performance & Rendering Strategy (SRE Enforced)
+
+### 4.1. Re-render Audits
+
+- **Tooling**: Developers must use React DevTools "Highlight updates" during QA.
+- **Rule**: If a parent re-renders, children typically re-render. Use `React.memo` for expensive sub-trees (charts, big tables) but **measure first**. premature memoization is bad.
+
+### 4.2. Large List Virtualization
+
+- **Threshold**: Any list capable of showing > 50 items MUST be virtualized.
+- **Library**: `tanstack-virtual`.
+- **Constraint**: No recursive rendering of 100+ DOM nodes depth.
+
+### 4.3. Memoization & referential Integrity
+
+- **Callbacks**: Use `useCallback` for functions passed to memoized children.
+- **Objects**: Avoid `style={{ margin: 10 }}` inline props for memoized components; move to const or className.
