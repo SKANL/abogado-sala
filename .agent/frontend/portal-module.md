@@ -28,13 +28,13 @@ El Portal es un **Renderizador** del JSON Schema creado en el `Templates Module`
     - PDF Viewer embebido.
 3.  **DocumentUpload** (Exception Flow):
     - **Normal**: Cliente arrastra archivo.
-      - **Background**: `POST /api/upload/sign`. -> `PUT [StorageUrl]`. -> `POST /api/upload/confirm`.
+      - **Background**: Client SDK Upload (`supabase.storage`). -> `confirmUploadAction(fileId, size, key)`.
       - UI: Progress Bar Real.
       - Result: `case_files` updated to 'uploaded'.
     - **Exception**: Cliente clickea "¿No tienes este documento?".
       - Despliega `Textarea` (Slide down).
       - Label: "¿Por qué no lo tienes?".
-      - Action: "Enviar Explicación".
+      - Action: "Enviar Explicación" -> `flagFileExceptionAction`.
       - Resultado: Paso marcado como "Completado con Excepción".
 4.  **Completion Screen**:
     - Mensaje final personalizado.

@@ -21,6 +21,12 @@ begin
     raise exception 'Access Denied: Only Admins can remove members.';
   end if;
 
+  -- 1b. Check Active Status (Deep Defense)
+  -- Uses security definer function to avoid RLS lookup issues
+  if not auth.is_active() then
+    raise exception 'Access Denied: User is suspended.';
+  end if;
+
   -- 2. Check Target Context
   select org_id, role into v_target_org, v_target_role from public.profiles where id = target_user_id;
   
@@ -181,7 +187,8 @@ begin
       where cl.id = c.client_id
       and cl.assigned_lawyer_id = auth.uid()
     )
-  );
+  )
+  and auth.is_active(); -- Fix: Enforce Soft Delete in RPC
 
   if v_file is null then
     raise exception 'File not found or access denied';
@@ -200,6 +207,11 @@ begin
   return v_file;
 end;
 $$;
+
+-- Security Hardening: Revoke public execution, restrict to service_role (Backend)
+-- This prevents users from calling this RPC directly with fake file sizes.
+revoke execute on function public.confirm_file_upload(uuid, bigint, text) from public, anon, authenticated;
+grant execute on function public.confirm_file_upload(uuid, bigint, text) to service_role;
 
 -- 5. Get Invitation Details (For Authenticated Admins)
 -- Called by getInvitationAction to validate invitation tokens
@@ -226,5 +238,186 @@ begin
   from public.invitations i
   where i.token = p_token;
   -- RLS ensures org_id = auth.org_id() and auth.is_admin()
+end;
+$$;
+
+-- 7. Security: Regenerate Case Token (Rotation) (Restored from Audit V1)
+create or replace function public.regenerate_case_token(p_case_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_new_token text;
+begin
+  -- Check Permissions (Same as Access Policy)
+  if not exists (
+    select 1 from public.cases c
+    where c.id = p_case_id
+    and (
+      (auth.is_admin() and c.org_id = auth.org_id())
+      or exists (
+        select 1 from public.clients cl
+        where cl.id = c.client_id
+        and cl.assigned_lawyer_id = auth.uid()
+      )
+    )
+    and auth.is_active() -- Fix: Enforce Soft Delete in RPC
+  ) then
+    raise exception 'Access Denied or Case Not Found';
+  end if;
+
+  v_new_token := encode(gen_random_bytes(32), 'hex');
+
+  update public.cases
+  set token = v_new_token, updated_at = now()
+  where id = p_case_id;
+
+  return v_new_token;
+end;
+$$;
+
+-- 8. Client Portal: Log Analytics (Anonymous Access)
+-- Bypasses RLS to allow anonymous users to log events (e.g., "Page View", "Step Completed")
+create or replace function public.log_portal_access(
+  p_case_token text,
+  p_event_type text,
+  p_step_index int default null,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_case_id uuid;
+begin
+  select id into v_case_id from public.cases where token = p_case_token;
+  
+  if v_case_id is null then
+    return; -- Security: Silent failure
+  end if;
+
+  insert into public.portal_analytics (
+    case_id, 
+    event_type, 
+    step_index, 
+    metadata,
+    user_agent
+  )
+  values (
+    v_case_id, 
+    p_event_type, 
+    p_step_index, 
+    p_metadata,
+    current_setting('request.headers', true)::jsonb->>'user-agent'
+  );
+end;
+$$;
+
+-- 9. Portal: Get Case Context by Token (Zero-Auth)
+-- Returns the Case + relevant Files in a single JSON to avoid RLS complexity
+create or replace function public.get_case_by_token(p_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_case public.cases;
+  v_client_name text;
+  v_files jsonb;
+begin
+  -- 1. Fetch Case
+  select * into v_case from public.cases where token = p_token;
+  
+  if v_case is null then
+    raise exception 'Case not found or invalid token';
+  end if;
+
+  -- 2. Verify Expiration
+  if v_case.expires_at < now() then
+    raise exception 'Link expired';
+  end if;
+
+  -- 3. Fetch Client Name (Privacy: Only First Name?) taking full name for now as per design
+  select full_name into v_client_name from public.clients where id = v_case.client_id;
+
+  -- 4. Fetch Files
+  select jsonb_agg(jsonb_build_object(
+    'id', cf.id,
+    'category', cf.category,
+    'status', cf.status,
+    'exception_reason', cf.exception_reason
+  )) into v_files
+  from public.case_files cf
+  where cf.case_id = v_case.id;
+
+  -- 5. Construct Response
+  return jsonb_build_object(
+    'case', row_to_json(v_case),
+    'client_name', v_client_name,
+    'files', coalesce(v_files, '[]'::jsonb)
+  );
+end;
+$$;
+
+-- 10. Portal: Flag File Exception (User doesn't have document)
+create or replace function public.flag_file_exception(
+  p_token text, 
+  p_file_id uuid, 
+  p_reason text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_case_id uuid;
+begin
+  -- 1. Resolve Case from Token
+  select id into v_case_id from public.cases where token = p_token and expires_at > now();
+  
+  if v_case_id is null then
+    raise exception 'Invalid or Expired Link';
+  end if;
+
+  -- 2. Update File Status
+  update public.case_files
+  set 
+    status = 'pending', -- Remains pending but flagged? Or 'error'? Design says 'pending' with reason or 'exception'.
+    -- Design says: "Missing (Exception): Naranja/Amarillo". File status enum has 'pending', 'uploaded', 'error'.
+    -- We'll use 'error' to signify "Issue/Exception" to the lawyer, or keep 'pending' with non-null exception_reason.
+    -- Let's use 'pending' + reason as "Exception state".
+    exception_reason = p_reason,
+    updated_at = now()
+  where id = p_file_id 
+  and case_id = v_case_id;
+end;
+$$;
+
+-- 11. Portal: Update Progress (Step Tracking)
+create or replace function public.update_case_progress(
+  p_token text,
+  p_step_index int
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_case_id uuid;
+begin
+  select id into v_case_id from public.cases where token = p_token and expires_at > now();
+  
+  if v_case_id is null then exit; end if; -- Silent fail for progress update
+
+  update public.cases
+  set current_step_index = p_step_index, updated_at = now()
+  where id = v_case_id;
 end;
 $$;

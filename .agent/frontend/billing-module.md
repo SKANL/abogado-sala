@@ -68,11 +68,12 @@ Tabla simple con las facturas fiscales.
    - **UX**: Mostrar error: "Debes degradar a otros admins a miembros antes de cambiar al plan Free".
 
 4. **Configuración de Límites (Anti-Hardcoding)**:
-   - Los límites (5 clientes, 1 admin) NO deben estar quemados en el código. Leer de tabla `plan_configs` o constante centralizada en Backend.
+   - Los límites (5 clientes, 1 admin) NO deben estar quemados en el código.
+   - **Acción**: Fetch via `getOrganizationConfigAction` al iniciar el dashboard para pintar Progress Bars.
 
 ### 5. Manejo de Errores de Cuota (UX)
 
-El backend retornará el código estándar `QUOTA_EXCEEDED` (definido en contracts).
+El backend retornará el código estándar `BILLING_QUOTA_CLIENTS`, `BILLING_QUOTA_STORAGE` o `BILLING_TRIAL_EXPIRED` (definido en contracts).
 Acción:
 
 1. **Prevenir Fallback Genérico**: No mostrar "Algo salió mal".

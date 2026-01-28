@@ -43,7 +43,7 @@ if (!user)
   };
 ```
 
-> **Referencia**: Ver `backend/backend-contracts.md` -> **Diccionario de Errores** para la lista oficial de códigos (`VAL_DEPENDENCY_EXISTS`, `AUTH_FORBIDDEN`, etc).
+> **Referencia**: Ver `backend/backend-contracts.md` -> **Diccionario de Errores** para la lista oficial (`VAL_DEPENDENCY_EXISTS`, `AUTH_SUSPENDED`, etc).
 
 ---
 

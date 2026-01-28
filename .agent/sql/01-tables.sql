@@ -22,6 +22,7 @@ create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   org_id uuid not null references organizations(id) on delete cascade, -- Fix: Clean Org Deletion
   role user_role not null default 'member',
+  status user_status not null default 'active', -- Support for removeMemberAction (Soft Delete)
   full_name text,
   avatar_url text,
   assigned_phone text,
@@ -171,4 +172,17 @@ create table notifications (
   read boolean not null default false,
   metadata jsonb default '{}'::jsonb,
   created_at timestamptz not null default now()
+);
+
+-- 14. Async Jobs (Zip Generation, Reports)
+create table jobs (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references organizations(id) on delete cascade,
+  requester_id uuid references profiles(id) on delete set null,
+  type text not null, -- 'zip_export', 'report_gen'
+  status text not null default 'pending', -- pending, processing, completed, failed
+  result_url text,
+  error_message text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );

@@ -72,6 +72,7 @@ declare
   v_limit int;
   v_max_storage bigint;
   v_lock_key bigint;
+  v_trial_ends_at timestamptz;
 begin
   -- Critical: Serialize inserts for this Org to prevent race conditions (The Quota Crusher)
   -- Use a Transactional Advisory Lock based on org_id
@@ -80,13 +81,17 @@ begin
   perform pg_advisory_xact_lock(v_lock_key);
 
   -- Get Org Settings (Now from plan_configs table)
-  select o.plan_tier, o.plan_status, pc.max_clients
-  into v_plan_tier, v_plan_status, v_limit
+  select o.plan_tier, o.plan_status, o.trial_ends_at, pc.max_clients
+  into v_plan_tier, v_plan_status, v_trial_ends_at, v_limit
   from organizations o
   left join plan_configs pc on o.plan_tier = pc.plan
   where o.id = new.org_id;
 
-  -- 1. Enforce Plan Status (Billing Lock)
+  -- 1. Enforce Plan Status & Trial Expiration
+  if v_plan_status = 'trialing' and v_trial_ends_at < now() then
+      raise exception 'Organization trial has expired.';
+  end if;
+
   if v_plan_status not in ('active', 'trialing') then
       raise exception 'Organization subscription is not active.';
   end if;
@@ -181,6 +186,7 @@ declare
   v_limit bigint;
   v_lock_key bigint;
   v_org_id uuid;
+  v_trial_ends_at timestamptz;
 begin
   if (TG_OP = 'INSERT') then
      v_delta := coalesce(new.file_size, 0);
@@ -205,12 +211,18 @@ begin
   update organizations 
   set storage_used = storage_used + v_delta
   where id = v_org_id
-  returning storage_used, plan_tier, plan_status into v_current_usage, v_plan_tier, v_plan_status;
+  returning storage_used, plan_tier, plan_status, trial_ends_at into v_current_usage, v_plan_tier, v_plan_status, v_trial_ends_at;
 
   -- Check Limit (On INSERT or UPDATE that increases size)
   -- Check Limit (On INSERT or UPDATE that increases size)
   if (v_delta > 0) then
     -- 1. Hard Block for Inactive Plans (Stop Revenue Leak)
+    if v_plan_status = 'trialing' and v_trial_ends_at < now() then
+      raise exception using
+        errcode = 'BLQUS', -- Custom code for "Billing Status"
+        message = 'BILLING_TRIAL_EXPIRED';
+    end if;
+
     if v_plan_status not in ('active', 'trialing') then
       raise exception using
         errcode = 'BLQUS', -- Custom code for "Billing Status"
@@ -246,9 +258,16 @@ security definer
 as $$
 declare
   v_status plan_status;
+  v_trial_ends_at timestamptz;
 begin
-  select plan_status into v_status from organizations where id = new.org_id;
+  select plan_status, trial_ends_at into v_status, v_trial_ends_at from organizations where id = new.org_id;
   
+  if v_status = 'trialing' and v_trial_ends_at < now() then
+      raise exception using
+        errcode = 'BLQUS',
+        message = 'BILLING_TRIAL_EXPIRED';
+  end if;
+
   if v_status not in ('active', 'trialing') then
       raise exception using
         errcode = 'BLQUS',
@@ -322,7 +341,8 @@ begin
   -- canceled/incomplete_expired -> canceled
   update organizations 
   set plan_status = case 
-    when new.status in ('active', 'trialing') then 'active'::plan_status
+    when new.status = 'active' then 'active'::plan_status
+    when new.status = 'trialing' then 'trialing'::plan_status
     when new.status in ('past_due', 'unpaid') then 'past_due'::plan_status
     else 'canceled'::plan_status
   end,

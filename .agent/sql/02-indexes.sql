@@ -1,53 +1,34 @@
 -- 02-indexes.sql
--- Performance Indexes & Foreign Key Indexes
+-- Performance Tuning: Foreign Key Indexes & Common Lookups
+-- Why? Postgres DOES NOT automatically index Foreign Keys.
+-- These are critical for avoiding Seq Scans in tenant-isolated queries (WHERE org_id = ...)
 
--- 1. Profiles
-create index profiles_org_id_idx on profiles(org_id);
+-- 1. Organization & Security Context
+create index if not exists idx_profiles_org_id on profiles(org_id);
+create index if not exists idx_profiles_status on profiles(status); -- For auth.is_active() speed
 
--- 2. Clients
-create index clients_org_id_idx on clients(org_id);
-create index clients_assigned_lawyer_id_idx on clients(assigned_lawyer_id);
--- Compound for common lookup: All clients for a lawyer in an org (though RLS handles security, index helps speed)
-create index clients_org_lawyer_idx on clients(org_id, assigned_lawyer_id);
--- Filter by status (Dashboard Tabs)
-create index clients_status_idx on clients(status);
--- Fuzzy search for name
-create index clients_name_trgm_idx on clients using gist (full_name gist_trgm_ops);
+-- 2. CRM Relationships
+create index if not exists idx_clients_org_id on clients(org_id);
+create index if not exists idx_clients_assigned_lawyer on clients(assigned_lawyer_id);
+create index if not exists idx_clients_email_org on clients(org_id, email); -- Unique check optimization
 
--- 3. Cases
-create index cases_client_id_idx on cases(client_id);
-create index cases_org_id_idx on cases(org_id);
-create index cases_token_idx on cases(token); -- Critical for public portal access
+-- 3. Case Management
+create index if not exists idx_cases_client_id on cases(client_id);
+create index if not exists idx_cases_org_id on cases(org_id);
+create index if not exists idx_cases_status on cases(status);
+create index if not exists idx_cases_token on cases(token); -- For Portal lookups
 
--- 4. Case Files
-create index case_files_case_id_idx on case_files(case_id);
-create index case_files_org_id_idx on case_files(org_id);
+-- 4. Files
+create index if not exists idx_case_files_case_id on case_files(case_id);
+create index if not exists idx_case_files_org_id on case_files(org_id);
 
--- 5. Templates
-create index templates_org_id_idx on templates(org_id);
-create index templates_owner_id_idx on templates(owner_id);
+-- 5. Audit & Logistics
+create index if not exists idx_audit_logs_org_id_created on audit_logs(org_id, created_at desc); -- For Dashboard Feed
+create index if not exists idx_audit_logs_actor on audit_logs(actor_id);
+create index if not exists idx_invitations_token on invitations(token);
+create index if not exists idx_invitations_email on invitations(email);
 
--- 6. Audit Logs
-create index audit_logs_org_id_created_at_idx on audit_logs(org_id, created_at desc);
-create index audit_logs_target_id_idx on audit_logs(target_id);
-
--- 7. Invitations
-create index invitations_email_idx on invitations(email);
-create index invitations_org_id_idx on invitations(org_id); -- Fix: Required for RLS
-create index invitations_token_idx on invitations(token); -- Fix: Required for get_invitation_by_token RPC
-
--- 8. Subscriptions
-create index subscriptions_org_id_idx on subscriptions(org_id); -- Fix: Required for RLS
-
--- 9. Portal Analytics
-create index portal_analytics_case_id_idx on portal_analytics(case_id);
-create index portal_analytics_created_at_idx on portal_analytics(created_at desc);
-
--- 10. Notifications
-create index notifications_user_read_idx on notifications(user_id, read) where read = false; -- Target unread counts
-create index notifications_org_id_idx on notifications(org_id);
-
--- 11. Composite Indexes for RLS Performance
--- Optimize nested EXISTS queries in case_files RLS policies
-create index cases_client_org_idx on cases(client_id, org_id);
-create index clients_id_lawyer_idx on clients(id, assigned_lawyer_id);
+-- 6. Jobs & Notifications
+create index if not exists idx_jobs_org_id on jobs(org_id);
+create index if not exists idx_jobs_status on jobs(status);
+create index if not exists idx_notifications_user_unread on notifications(user_id) where read = false; -- Partial Index for UI Badge count
