@@ -142,6 +142,12 @@ create policy "Admins view subscriptions"
 -- 11. Portal Analytics Policies
 alter table portal_analytics enable row level security;
 
--- Analytics are inserted by system/anon via RPC usually, but if direct insert needed:
--- Keeping strictly closed for now, assuming RPC insertion or Service Role.
+-- Allow Anon/Auth to insert analytics (logging)
+create policy "Public insert portal analytics"
+  on portal_analytics for insert
+  with check (true);
+
+-- 12. Storage Delete Queue
+alter table storage_delete_queue enable row level security;
+-- No policies = Deny All (System/Service Role only via Triggers)
 

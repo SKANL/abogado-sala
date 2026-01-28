@@ -9,7 +9,10 @@ create table organizations (
   plan_tier plan_tier not null default 'trial',
   plan_status plan_status not null default 'active',
   stripe_customer_id text,
+  trial_ends_at timestamptz, -- Missing in audit: Track trial expiration explicitly
   storage_used bigint not null default 0, -- Track total bytes used
+  logo_url text, -- White Labeling
+  primary_color text default '#18181b', -- Brand Color default zinc-950
   created_at timestamptz not null default now()
 );
 

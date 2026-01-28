@@ -63,6 +63,13 @@ Tabla simple con las facturas fiscales.
        - b) Borres/Archives clientes hasta bajar de 5.
    - **Data Retention**: Si la cuenta se cancela totalmente, se mantienen datos por 90 días antes de `Hard Delete`.
 
+3. **Prevención de "Admin Lockout" (Safety Check)**:
+   - **Regla**: No permitir downgrade si `Count(Admins) > NuevoPlan.MaxAdmins`.
+   - **UX**: Mostrar error: "Debes degradar a otros admins a miembros antes de cambiar al plan Free".
+
+4. **Configuración de Límites (Anti-Hardcoding)**:
+   - Los límites (5 clientes, 1 admin) NO deben estar quemados en el código. Leer de tabla `plan_configs` o constante centralizada en Backend.
+
 ---
 
 ## 3. Componentes UI Requeridos

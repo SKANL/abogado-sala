@@ -46,3 +46,15 @@ Para descargas y subidas seguras en Storage.
 Si decidimos integrar API oficial (Meta) en el futuro.
 
 - Actualmente es Client-Side (`wa.me` link), así que **no se requiere backend** por ahora.
+
+## 4. Security Webhooks
+
+### `storage-quota-guard` (Audit 2.4 Fix)
+
+- **Problema**: El trigger SQL confía en el `file_size` reportado por el cliente.
+- **Solución**: Webhook que se dispara `on_upload`.
+- **Lógica**:
+  1. Recibe evento S3/Storage.
+  2. Lee metadata real (`content_length`) del objeto subido.
+  3. Actualiza `case_files.file_size` con el valor real.
+  4. Si excede cuota -> Borra archivo + Notifica al usuario.

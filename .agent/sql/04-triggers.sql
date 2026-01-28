@@ -25,7 +25,7 @@ end;
 $$;
 
 -- Note: Trigger usually enabled in production
--- create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
+create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
 
 
 -- 2. Quota Enforcement: Prevent Plan Escalation (With Concurrency Locking)

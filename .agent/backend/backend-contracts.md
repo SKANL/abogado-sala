@@ -35,11 +35,60 @@ El token de sesión (`auth.session`) debe incluir los siguientes Custom Claims p
 }
 ```
 
-## 3. Server Actions Contracts
+## 3. Server Actions Registry
 
 Todas las mutaciones deben respetar la interfaz `Result<T>` definida en `frontend/data-fetching-mutations.md`.
 
-### Estructura de Respuesta de Error
+### Core Actions
+
+| Action Name              | Input Schema (Zod)   | Output `T`   | Descripción                                                    |
+| ------------------------ | -------------------- | ------------ | -------------------------------------------------------------- |
+| `createClientAction`     | `insertClientSchema` | `Client`     | Crea un nuevo cliente en la organización.                      |
+| `updateClientAction`     | `updateClientSchema` | `Client`     | Modifica datos del cliente.                                    |
+| `inviteMemberAction`     | `inviteMemberSchema` | `Invitation` | Envía invitación por email a un nuevo miembro.                 |
+| `getInvitationAction`    | `{ token: string }`  | `Invitation` | Obtiene detalles (Validación Server-Side). Bloqueado por RLS.  |
+| `createCaseAction`       | `createCaseSchema`   | `Case`       | Inicializa un nuevo expediente/sala.                           |
+| `revokeInvitationAction` | `{ id: string }`     | `void`       | Cancela una invitación pendiente.                              |
+| `deleteFileAction`       | `{ fileId: string }` | `void`       | Marca archivo para borrado asíncrono (`storage_delete_queue`). |
+
+## 4. Schemas de Validación (Zod Definitions)
+
+Estos schemas deben ser compartidos entre Frontend (Validación Form) y Backend (Validación Action).
+
+> **Nota**: `z.string().min(1)` es obligatorio para campos `NOT NULL`.
+
+### `insertClientSchema`
+
+```typescript
+z.object({
+  full_name: z.string().min(2, "Nombre requerido").max(100),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  assigned_lawyer_id: z.string().uuid().optional(), // Nullable en DB
+  status: z.enum(["prospect", "active", "closed"]).default("prospect"),
+});
+```
+
+### `inviteMemberSchema`
+
+```typescript
+z.object({
+  email: z.string().email("Email inválido"),
+  role: z.enum(["admin", "member"]).default("member"),
+});
+```
+
+### `createCaseSchema`
+
+```typescript
+z.object({
+  client_id: z.string().uuid("Cliente requerido"),
+  template_snapshot: z.record(z.any()).optional(), // JSONB
+  status: z.enum(["draft", "active"]).default("draft"),
+});
+```
+
+## 5. Estructura de Respuesta de Error
 
 Si el backend falla, debe retornar:
 
@@ -51,13 +100,13 @@ Si el backend falla, debe retornar:
 }
 ```
 
-## 4. Realtime Channels
+## 6. Realtime Channels
 
 El Frontend espera suscribirse a canales seguros. El backend debe exponer:
 
 - `client-{clientId}`: Eventos de actualización del expediente.
 - `org-{orgId}`: Eventos globales (stats, logs).
 
-## 5. Transacciones Atómicas (Auth)
+## 7. Transacciones Atómicas (Auth)
 
-El registro (`createAccount`) debe ser atómico. Si falla la creación de `org`, no debe crearse el `user`.
+El registro (`createAccount`) debe ser atómico. Si falla la creación de `org`, no debe crearse el `user`. La tabla `profiles` se crea automáticamente vía Trigger `on_auth_user_created`.

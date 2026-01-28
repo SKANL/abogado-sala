@@ -13,6 +13,14 @@ No todo necesita realtime. Usar WebSocket consume recursos y conexiones.
 2.  **Detalle de Expediente**: Si el cliente llena el form mientras el abogado lo mira, ver los campos completarse.
 3.  **Lista de Alertas**: Notificaciones urgentes.
 
+### Estrategia de Persistencia (No "Transient Feeds")
+
+- **Problema**: WebSockets se pierden si el usuario está offline.
+- **Solución**: Todo evento crítico (`FILE_UPLOADED`, `CASE_SIGNED`) debe:
+  1. Insertarse en tabla `notifications`.
+  2. El cliente hace fetch inicial de `notifications` no leídas.
+  3. Realtime solo "empuja" las nuevas.
+
 ---
 
 ## 2. Arquitectura Técnica (`hooks/useRealtime.ts`)

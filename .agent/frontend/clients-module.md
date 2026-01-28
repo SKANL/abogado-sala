@@ -35,6 +35,10 @@ La seguridad está en la **Database Query**, no solo en filtros de UI.
       - `/documentos/`: Todos los PDFs/Imágenes renombrados (`01_DNI.pdf`).
       - `resumen.txt`: Metadata del cliente + Respuestas del Cuestionario en texto plano.
       - `auditoria.txt`: Logs e IPs del cliente.
+    - **Strategy**:
+      - **Desktop**: Client-Side (`jszip`) para feedback inmediato (100% Client CPU).
+      - **Mobile/Large Files**: Si el peso > 50MB, fallback a Server Action `requestZipGeneration`.
+        - **Tracking**: Polling a tabla `jobs` para evitar "Ghost Zip" (Audit 2.5). Feedback visual de "Procesando en servidor...".
 
 ### Estado de Archivos
 

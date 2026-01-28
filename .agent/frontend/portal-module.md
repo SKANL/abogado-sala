@@ -55,3 +55,12 @@ El Portal es un **Renderizador** del JSON Schema creado en el `Templates Module`
 | **Pasos**        | Hardcoded                   | **Schema Driven** (Totalmente dinámico) |
 | **Carga**        | Dynamic Imports básicos     | **Streaming + Skeletons** (Suspense)    |
 | **Persistencia** | React State (Volátil)       | **URL + DB** (Resiliente)               |
+
+## 5. Security & Lifecycle
+
+### Token Revocation (Audit 2.6)
+
+- **Regla**: El acceso al Portal no debe ser eterno.
+- **Acción**: Al completar el expediente (`status = 'completed'`):
+  - Actualizar `cases.expires_at = NOW() + interval '24 hours'`.
+  - Permitir descarga final y luego bloquear acceso.

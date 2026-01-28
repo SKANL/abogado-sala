@@ -37,6 +37,16 @@ stateDiagram-v2
 5. **Finalización**:
    - **Action**: Invocar `createAccountAction`.
    - **Contract**: El backend debe garantizar la atomicidad (User + Profile + Org). [Ver Backend Contracts](file:///c:/code/WEB/astro/abogados/abogado-sala/.agent/backend/backend-contracts.md).
+   - **CRÍTICO - Force Refresh**: El primer JWT del usuario tiene `org_id: null`. El cliente **DEBE** forzar `supabase.auth.refreshSession()` inmediatamente después de crear la Org para recibir el nuevo claim `org_id`.
+
+### Invite Flow Security (Anti-Hijack)
+
+- **Problema**: Atacante logueado acepta invitación de otro email.
+- **Validación**: `joinByInvitationAction` debe verificar:
+  ```typescript
+  if (session.user.email !== invitation.email)
+    throw new Error("Email mismatch");
+  ```
 
 ---
 

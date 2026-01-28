@@ -63,3 +63,15 @@ Definición estricta de los actores del sistema y sus alcances en la interfaz.
 ### C. Interfaz Portal
 
 - Sin estado persistente. Contexto derivado puramente del Token URL.
+
+---
+
+## 4. Ciclo de Vida Crítico (Manejo de Bajas)
+
+### Prevención de "Zombie Users" (Security Warning)
+
+Al eliminar un miembro (`removeMemberAction`):
+
+1.  **Soft Delete (SQL)**: Borrar fila en tabla `profiles`.
+2.  **Hard Ban (Supabase Auth)**: **OBLIGATORIO** llamar a `supabase.auth.admin.deleteUser(uid)` en el backend.
+    - _Razón_: Si solo borramos el perfil, el JWT del usuario sigue siendo válido hasta expirar. Borrar el Auth User invalida el token inmediatamente.
