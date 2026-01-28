@@ -10,10 +10,15 @@ Este módulo es una "Area VIP". Todo componente aquí asume que el usuario es `A
 
 ### A. Gestión de Equipo (El Despacho)
 
-1. **Invitar Abogado**:
-   - Input: Email.
-   - Action: Sistema envía invitación.
-   - UI: El abogado aparece "Pendiente" en la lista de equipo.
+1. **Invitar Abogado (Invite Flow)**:
+   - **Input**: Email del colaborador.
+   - **Backend**:
+     - Verifica si email ya existe en `invitations` (pending) o `profiles` (active).
+     - Crea registro en tabla `invitations` (status: pending, token: uuid).
+     - Envía email transaccional (Resend/SendGrid) con Magic Link.
+   - **UI**:
+     - Tabla "Invitaciones Pendientes" con botón "Revocar" o "Reenviar".
+     - Al aceptar, el sistema convierte la `invitation` en un `profile` + `auth.user` y borra/archiva la invitación.
 2. **Monitoreo de Actividad**:
    - Owner ve tabla "Actividad Reciente".
    - Filtro: "Ver actividad de [Abogado Jr.]".

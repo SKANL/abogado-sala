@@ -43,6 +43,12 @@ create policy "Access Clients"
     (assigned_lawyer_id = auth.uid())
   );
 
+create policy "Members can insert clients"
+  on clients for insert
+  with check (
+    org_id = auth.org_id()
+  );
+
 -- 5. Cases Policies
 -- Inherits logic from Clients essentially, but direct check for speed (denormalized org_id)
 -- Using same logic: Admin sees all in Org, Member sees assigned clients' cases.
@@ -88,7 +94,9 @@ create policy "Access Case Files"
 -- 7. Templates Policies
 -- Global: Read (All), Write (Admin). Private: Full (Owner)
 
-create policy "View Templates"
+
+-- Split Policies to avoid recursion/overlap
+create policy "Select Templates"
   on templates for select
   using (
     (scope = 'global' and org_id = auth.org_id())
@@ -96,13 +104,18 @@ create policy "View Templates"
     (owner_id = auth.uid())
   );
 
-create policy "Manage Templates"
-  on templates for all
-  using (
-    (scope = 'global' and org_id = auth.org_id() and auth.is_admin())
-    or
-    (owner_id = auth.uid())
-  );
+create policy "Insert Templates"
+  on templates for insert
+  with check (owner_id = auth.uid() and org_id = auth.org_id());
+
+create policy "Update Templates"
+  on templates for update
+  using (owner_id = auth.uid());
+
+create policy "Delete Templates"
+  on templates for delete
+  using (owner_id = auth.uid());
+
 
 -- 8. Audit Logs
 -- View Only (Admin usually, or maybe all members depending on requirement? Letting Admin only for now)
@@ -111,3 +124,24 @@ create policy "Admins view audit logs"
   using (org_id = auth.org_id() and auth.is_admin());
   
 -- No update/delete on audit logs (Immutable by omission of policies)
+
+-- 9. Invitations Policies
+alter table invitations enable row level security;
+
+create policy "Admins view and manage invitations"
+  on invitations for all
+  using (org_id = auth.org_id() and auth.is_admin());
+
+-- 10. Subscriptions Policies
+alter table subscriptions enable row level security;
+
+create policy "Admins view subscriptions"
+  on subscriptions for select
+  using (org_id = auth.org_id() and auth.is_admin());
+
+-- 11. Portal Analytics Policies
+alter table portal_analytics enable row level security;
+
+-- Analytics are inserted by system/anon via RPC usually, but if direct insert needed:
+-- Keeping strictly closed for now, assuming RPC insertion or Service Role.
+

@@ -32,9 +32,14 @@ Corre cada noche.
 
 ### `generate-signed-urls`
 
-Para descargas seguras en Storage.
+Para descargas y subidas seguras en Storage.
 
-- En lugar de hacer buckets públicos, generamos URLs firmadas con TTL (Time To Live) de 1 hora.
+- En lugar de hacer buckets públicos, generamos URLs firmadas con TTL de 1 hora.
+- **Validación Crítica (Billing Race)**:
+  1. Antes de generar Signed URL de subida (`PUT`):
+  2. Calcular `Projected Usage` = `Current Storage Used` + `New File Size`.
+  3. Si `Projected Usage` > `Plan quota`: Retornar `402 Payment Required`.
+  4. _Optimization_: Usar contador Redis/Cache para evitar `sum(files)` en cada request.
 
 ### `whatsapp-bridge`
 

@@ -16,13 +16,20 @@ create type template_scope as enum ('private', 'global');
 
 -- 3. RLS Helper Functions (Security Plumbing)
 -- Function to get the current user's organization ID
+-- Function to get the current user's organization ID
+-- Optimized: Reads from JWT app_metadata first to avoid DB lookup (Performance)
 create or replace function auth.org_id() 
 returns uuid 
 language sql 
 security definer 
 stable
 as $$
-  select org_id from public.profiles where id = auth.uid();
+  select coalesce(
+    (current_setting('request.jwt.claims', true)::jsonb -> 'app_metadata' ->> 'org_id')::uuid,
+    -- Fallback: Look up in profiles (Costly, but safe)
+    (select org_id from public.profiles where id = auth.uid()),
+    '00000000-0000-0000-0000-000000000000'::uuid
+  );
 $$;
 
 -- Function to check if the current user is an admin

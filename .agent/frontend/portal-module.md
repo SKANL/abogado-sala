@@ -27,7 +27,10 @@ El Portal es un **Renderizador** del JSON Schema creado en el `Templates Module`
     - **Click Wrap Agreement**: Checkbox obligatorio.
     - PDF Viewer embebido.
 3.  **DocumentUpload** (Exception Flow):
-    - **Normal**: Cliente arrastra archivo. -> Upload -> OK.
+    - **Normal**: Cliente arrastra archivo.
+      - **Background**: `POST /api/upload/sign`. -> `PUT [StorageUrl]`. -> `POST /api/upload/confirm`.
+      - UI: Progress Bar Real.
+      - Result: `case_files` updated to 'uploaded'.
     - **Exception**: Cliente clickea "¿No tienes este documento?".
       - Despliega `Textarea` (Slide down).
       - Label: "¿Por qué no lo tienes?".

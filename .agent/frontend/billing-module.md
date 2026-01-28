@@ -46,13 +46,22 @@ Tabla simple con las facturas fiscales.
 2.  **Checkout**: Redirección a proveedor de pagos (Stripe Checkout) o Modal embebido.
 3.  **Success**: Confeti + Redirección a Dashboard.
 
-### D. Bloqueo por Impago (Lockout)
+### D. Bloqueo por Impago & Downgrades
 
-Si el pago falla (dunning) o el trial expira:
+1. **Impago / Expiración**:
+   - **Owner**: Ve una pantalla "Payment Required" al intentar entrar. Solo puede ir a pagar.
+   - **Lawyer**: Ve "Cuenta del despacho suspendida. Contacta a tu administrador".
+   - **Client**: Los portales siguen activos (Read-only) por un tiempo de gracia (7 días), luego 404.
 
-- **Owner**: Ve una pantalla "Payment Required" al intentar entrar. Solo puede ir a pagar.
-- **Lawyer**: Ve "Cuenta del despacho suspendida. Contacta a tu administrador".
-- **Client**: Los portales siguen activos (Read-only) por un tiempo de gracia, luego 404.
+2. **Downgrade (Pro -> Free) con Exceso de Uso**:
+   - **Escenario**: Tienes 20 clientes, el Free permite 5.
+   - **Política "Soft Block"**:
+     - No borramos datos.
+     - **Read-Only**: Puedes ver tus 20 clientes.
+     - **Write-Block**: No puedes editar ni crear NUEVOS clientes hasta que:
+       - a) Vuelvas a Pro.
+       - b) Borres/Archives clientes hasta bajar de 5.
+   - **Data Retention**: Si la cuenta se cancela totalmente, se mantienen datos por 90 días antes de `Hard Delete`.
 
 ---
 

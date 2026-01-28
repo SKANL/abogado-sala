@@ -53,3 +53,22 @@ _Casos Válidos_:
 1. **No sincronizar manually**: Evita `useEffect(() => { setServerData(props.data) }, [props.data])`. Usa `key` para reiniciar componentes si la data cambia.
 2. **Lift State Up (Inteligentemente)**: Si dos componentes hermanos necesitan el dato, sube el estado al padre más cercano, no al contexto global.
 3. **Context API**: Usar solo para inyección de dependencia o estado compuesto muy estable (Theme, AuthUser). No usar para flujos de datos rápidos (causa re-renders masivos).
+
+## 3. Estrategia de Persistencia (Form Drafts)
+
+Para prevenir pérdida de datos en Wizards largos (User Error, Network Ghost):
+
+### Pattern: "Draft First" (Persistent Forms)
+
+1.  **LocalStorage Mirror**: Todo Wizard de >1 paso debe usar un hook `useFormPersist(key)`.
+    - **Write**: `watch()` changes -> Debounce (500ms) -> `localStorage.setItem`.
+    - **Read**: `useEffect` on mount -> `reset(JSON.parse(localStorage))`.
+2.  **Conflict Resolution ("El Refresh Asesino")**:
+    - **Scenario**: Usuario abre el form en 2 pestañas o vuelve después de días.
+    - **Strategy**:
+      - Al montar, comparar `localStorage.timestamp` vs `serverData.updated_at`.
+      - Si `serverData` es más reciente, **ignorar LocalStorage**.
+      - Si `localStorage` es más reciente (o Server es null), **restaurar Local**.
+    - **UI**: Mostrar "Borrador restaurado" toast si se recuperó del local.
+3.  **Clean on Success**: Al recibir `200 OK` del Server Action final, borrar la key del storage.
+4.  **UX Feedback**: Mostrar "Guardado" (check discreto) alado del título.
