@@ -2,24 +2,29 @@
 -- Core Table Definitions
 
 -- 1. Organizations
+create type plan_tier as enum ('trial', 'pro', 'enterprise', 'demo'); -- Added 'demo'
+create type plan_status as enum ('active', 'past_due', 'canceled', 'paused');
+
 create table organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
   plan_tier plan_tier not null default 'trial',
   plan_status plan_status not null default 'active',
-  stripe_customer_id text,
+  stripe_customer_id text unique, -- Enforced 1:1 mapping
   trial_ends_at timestamptz, -- Missing in audit: Track trial expiration explicitly
-  storage_used bigint not null default 0, -- Track total bytes used
+  storage_used bigint not null default 0 check (storage_used >= 0), -- Track total bytes used
   logo_url text, -- White Labeling
   primary_color text default '#18181b', -- Brand Color default zinc-950
   created_at timestamptz not null default now()
 );
 
 -- 2. Profiles (Linked to auth.users)
+create type user_role as enum ('admin', 'member');
+
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  org_id uuid not null references organizations(id),
+  org_id uuid not null references organizations(id), -- Critical: Keep NOT NULL, Fix in Logic
   role user_role not null default 'member',
   full_name text,
   avatar_url text,
@@ -29,6 +34,8 @@ create table profiles (
 );
 
 -- 3. Clients
+create type client_status as enum ('prospect', 'active', 'archived'); -- Added 'active', 'archived'
+
 create table clients (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id),
@@ -43,6 +50,8 @@ create table clients (
 );
 
 -- 4. Cases (Salas)
+create type case_status as enum ('draft', 'in_progress', 'review', 'completed'); -- Explicited lifecycle
+
 create table cases (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references clients(id) on delete cascade,
@@ -57,6 +66,8 @@ create table cases (
 );
 
 -- 5. Case Files
+create type file_status as enum ('pending', 'uploaded', 'error');
+
 create table case_files (
   id uuid primary key default gen_random_uuid(),
   case_id uuid not null references cases(id) on delete cascade,
@@ -71,10 +82,12 @@ create table case_files (
 );
 
 -- 6. Templates
+create type template_scope as enum ('global', 'private');
+
 create table templates (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id),
-  owner_id uuid not null references profiles(id),
+  owner_id uuid references profiles(id) on delete set null, -- Audit Fix: Prevent orphan crash
   title text not null,
   schema jsonb not null default '{}'::jsonb,
   scope template_scope not null default 'private',
@@ -109,12 +122,14 @@ create table invitations (
 );
 
 -- 9. Subscriptions (New - Stripe History)
+create type subscription_status as enum ('active', 'past_due', 'canceled', 'incomplete', 'incomplete_expired', 'trialing', 'unpaid');
+
 create table subscriptions (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   stripe_subscription_id text unique,
   stripe_price_id text,
-  status text not null,
+  status subscription_status not null, -- Fixed: now is enum
   current_period_start timestamptz,
   current_period_end timestamptz,
   cancel_at timestamptz,
@@ -144,4 +159,30 @@ create table storage_delete_queue (
   retry_count int not null default 0,
   created_at timestamptz not null default now(),
   processed_at timestamptz
+);
+
+-- 12. Plan Configs (New - Audit H2)
+create table plan_configs (
+  plan plan_tier primary key,
+  max_clients int not null,
+  max_admins int not null,
+  max_storage_bytes bigint not null,
+  can_white_label boolean not null default false
+);
+
+insert into plan_configs (plan, max_clients, max_admins, max_storage_bytes, can_white_label) values
+  ('trial', 10, 1, 524288000, false), -- 500MB
+  ('pro', 1000, 5, 53687091200, true); -- 50GB
+
+-- 13. Notifications (New - Audit H3)
+create table notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  org_id uuid not null references organizations(id) on delete cascade,
+  title text not null,
+  message text not null,
+  type text not null, -- 'info', 'warning', 'success', 'error'
+  read boolean not null default false,
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamptz not null default now()
 );

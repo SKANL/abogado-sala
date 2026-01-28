@@ -70,6 +70,15 @@ Tabla simple con las facturas fiscales.
 4. **Configuración de Límites (Anti-Hardcoding)**:
    - Los límites (5 clientes, 1 admin) NO deben estar quemados en el código. Leer de tabla `plan_configs` o constante centralizada en Backend.
 
+### 5. Manejo de Errores de Cuota (UX)
+
+El backend retornará el código estándar `QUOTA_EXCEEDED` (definido en contracts).
+Acción:
+
+1. **Prevenir Fallback Genérico**: No mostrar "Algo salió mal".
+2. **Abrir Modal de Upgrade**: Mostrar "Has alcanzado el límite de tu plan".
+3. **Analytics**: Registrar el evento `quota_hit` para ventas.
+
 ---
 
 ## 3. Componentes UI Requeridos

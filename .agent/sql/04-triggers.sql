@@ -7,19 +7,40 @@ returns trigger
 language plpgsql 
 security definer 
 as $$
+declare
+  v_org_id uuid;
+  v_role user_role := 'member';
 begin
+  -- Search for pending invitation via Email
+  select org_id, role into v_org_id, v_role
+  from public.invitations
+  where email = new.email
+  and status = 'pending'
+  limit 1;
+
+  -- If found, auto-accept (Business Logic could vary, but this ensures Profile validity)
+  if v_org_id is not null then
+      update public.invitations set status = 'accepted' where email = new.email;
+  end if;
+
+  -- Attempt Insert (If org_id is NULL and column is NOT NULL, this will fail)
+  -- We rely on Exception catching to allow "Owner Flow" (Create Account -> Create Org -> Create Profile manually)
   insert into public.profiles (id, org_id, role, full_name, avatar_url)
   values (
     new.id,
-    NULL, -- Org ID should be assigned via Invitation or onboarding flow
-    'member',
+    v_org_id, -- Might be NULL if no invite
+    coalesce(v_role, 'member'),
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'avatar_url'
   );
   return new;
 exception 
+  when not_null_violation then
+    -- Expected for new Owners creating a fresh Org. 
+    -- Server Action will handle Profile creation after Org creation.
+    return new;
   when others then
-    -- Log error but allow auth to proceed (app checks profile existence)
+    -- Log other errors but don't block auth
     return new;
 end;
 $$;
@@ -38,25 +59,26 @@ declare
   v_plan_tier plan_tier;
   v_count int;
   v_limit int;
+  v_max_storage bigint;
   v_lock_key bigint;
 begin
   -- Critical: Serialize inserts for this Org to prevent race conditions (The Quota Crusher)
   -- Use a Transactional Advisory Lock based on org_id
-  -- We cast UUID to bigint (taking first 8 bytes implies minimal collision risk for this purpose, or hash it)
-  v_lock_key := ('x' || substr(new.org_id::text, 1, 8))::bit(64)::bigint;
+  -- Use hashtext to generate a stable bigint from the UUID string + prefix
+  v_lock_key := hashtext('client_quota_' || new.org_id::text);
   perform pg_advisory_xact_lock(v_lock_key);
 
-  -- Get Org Plan Tier
-  select plan_tier into v_plan_tier from organizations where id = new.org_id;
+  -- Get Org Settings (Now from plan_configs table)
+  select o.plan_tier, pc.max_clients
+  into v_plan_tier, v_limit
+  from organizations o
+  left join plan_configs pc on o.plan_tier = pc.plan
+  where o.id = new.org_id;
+  
+  -- Fallback if config missing (Critical Safety)
+  if v_limit is null then v_limit := 5; end if;
 
-  -- Define Limits (Should map to a proper Config Table in Production)
   if TG_TABLE_NAME = 'clients' then
-    v_limit := case v_plan_tier 
-      when 'trial' then 10 
-      when 'pro' then 1000 
-      else 5 
-    end;
-    
     select count(*) into v_count from clients where org_id = new.org_id;
     
     if v_count >= v_limit then
@@ -137,50 +159,44 @@ declare
   v_plan_tier plan_tier;
   v_limit bigint;
   v_lock_key bigint;
-  v_file_size bigint; -- Assumes user metadata or extra column has size
+  v_org_id uuid;
 begin
-  -- Note: Ideally 'case_files' has a 'file_size' column. Assuming it does or we extract from metadata.
-  -- For this example, we assume we added 'file_size' to case_files (or use a default avg).
-  -- Let's assume there is a 'file_size' column. If not added yet, we should add it to tables.sql.
-  -- Fallback to 0 if null.
-  
   if (TG_OP = 'INSERT') then
      v_delta := coalesce(new.file_size, 0);
+     v_org_id := new.org_id;
   elsif (TG_OP = 'UPDATE') then
-     -- Calculate difference (e.g. 0 -> 10MB, or 10MB -> 5MB)
      v_delta := coalesce(new.file_size, 0) - coalesce(old.file_size, 0);
+     v_org_id := new.org_id;
   elsif (TG_OP = 'DELETE') then
      v_delta := -coalesce(old.file_size, 0);
+     v_org_id := old.org_id;
   end if;
 
   if v_delta = 0 then
-    return new;
+    return null; -- After trigger, return ignored but null matches spec
   end if;
 
   -- Concurrency Lock for Storage Counter
-  v_lock_key := ('s' || substr(coalesce(new.org_id, old.org_id)::text, 1, 8))::bit(64)::bigint;
+  v_lock_key := hashtext('storage_quota_' || v_org_id::text);
   perform pg_advisory_xact_lock(v_lock_key);
 
   -- Update Counter
   update organizations 
   set storage_used = storage_used + v_delta
-  where id = coalesce(new.org_id, old.org_id)
+  where id = v_org_id
   returning storage_used, plan_tier into v_current_usage, v_plan_tier;
 
   -- Check Limit (On INSERT or UPDATE that increases size)
   if (v_delta > 0) then
-    v_limit := case v_plan_tier 
-      when 'trial' then 524288000 -- 500MB
-      when 'pro' then 53687091200 -- 50GB
-      else 5242880000 -- 5GB (fallback)
-    end;
+    select max_storage_bytes into v_limit from plan_configs where plan = v_plan_tier;
+    if v_limit is null then v_limit := 524288000; end if; -- 500MB Fallback
 
     if v_current_usage > v_limit then
       raise exception 'Storage Quota Exceeded. Used: %, Limit: %', v_current_usage, v_limit;
     end if;
   end if;
 
-  return new;
+  return null;
 end;
 $$;
 

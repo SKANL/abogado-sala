@@ -57,6 +57,7 @@ create policy "Members can insert clients"
 -- However, strict requirement was: "User Level Scope". 
 -- If a case belongs to a client assigned to me, I see it.
 -- We can simplify by assuming if I can see the Client, I can see the Case.
+-- 5. Cases Policies
 create policy "Access Cases"
   on cases for all
   using (
@@ -68,6 +69,23 @@ create policy "Access Cases"
       and clients.assigned_lawyer_id = auth.uid()
     )
   );
+
+-- Fix: C4. Falta política INSERT para `cases`
+create policy "Insert Cases"
+  on cases for insert
+  with check (
+    org_id = auth.org_id()
+    and
+    (
+      auth.is_admin() 
+      or 
+      exists (
+        select 1 from clients 
+        where clients.id = cases.client_id 
+        and clients.assigned_lawyer_id = auth.uid()
+      )
+    )
+  );
   
 -- 6. Case Files Policies
 -- Access if user has access to the Case.
@@ -77,8 +95,6 @@ create policy "Access Case Files"
     exists (
       select 1 from cases
       where cases.id = case_files.case_id
-      -- Reuse Case access logic inside subquery or rely on recursive RLS?
-      -- Recursive RLS can be slow. Better to duplicate the check logic or use a helper.
       and (
         (auth.is_admin() and cases.org_id = auth.org_id())
         or
@@ -93,7 +109,6 @@ create policy "Access Case Files"
 
 -- 7. Templates Policies
 -- Global: Read (All), Write (Admin). Private: Full (Owner)
-
 
 -- Split Policies to avoid recursion/overlap
 create policy "Select Templates"
@@ -122,8 +137,11 @@ create policy "Delete Templates"
 create policy "Admins view audit logs"
   on audit_logs for select
   using (org_id = auth.org_id() and auth.is_admin());
-  
--- No update/delete on audit logs (Immutable by omission of policies)
+
+-- Fix: H4. Members see their own logs
+create policy "Members view own logs"
+  on audit_logs for select
+  using (actor_id = auth.uid());
 
 -- 9. Invitations Policies
 alter table invitations enable row level security;
@@ -147,7 +165,33 @@ create policy "Public insert portal analytics"
   on portal_analytics for insert
   with check (true);
 
+-- Fix: C5. Falta política SELECT para `portal_analytics`
+create policy "Admins view portal analytics"
+  on portal_analytics for select
+  using (
+    exists (
+      select 1 from cases
+      where cases.id = portal_analytics.case_id
+      and cases.org_id = auth.org_id()
+      and auth.is_admin()
+    )
+  );
+
 -- 12. Storage Delete Queue
 alter table storage_delete_queue enable row level security;
 -- No policies = Deny All (System/Service Role only via Triggers)
+
+-- 13. Plan Configs (New)
+alter table plan_configs enable row level security;
+
+create policy "Authenticated read plan configs"
+  on plan_configs for select
+  using (auth.role() = 'authenticated');
+
+-- 14. Notifications (New)
+alter table notifications enable row level security;
+
+create policy "Users manage own notifications"
+  on notifications for all
+  using (user_id = auth.uid());
 

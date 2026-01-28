@@ -28,3 +28,14 @@ create index templates_owner_id_idx on templates(owner_id);
 -- 6. Audit Logs
 create index audit_logs_org_id_created_at_idx on audit_logs(org_id, created_at desc);
 create index audit_logs_target_id_idx on audit_logs(target_id);
+
+-- 7. Invitations
+create index invitations_email_idx on invitations(email);
+
+-- 8. Portal Analytics
+create index portal_analytics_case_id_idx on portal_analytics(case_id);
+create index portal_analytics_created_at_idx on portal_analytics(created_at desc);
+
+-- 9. Notifications
+create index notifications_user_read_idx on notifications(user_id, read) where read = false; -- Target unread counts
+create index notifications_org_id_idx on notifications(org_id);

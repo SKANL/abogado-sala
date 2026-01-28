@@ -54,27 +54,44 @@ _Casos Válidos_:
 2. **Lift State Up (Inteligentemente)**: Si dos componentes hermanos necesitan el dato, sube el estado al padre más cercano, no al contexto global.
 3. **Context API**: Usar solo para inyección de dependencia o estado compuesto muy estable (Theme, AuthUser). No usar para flujos de datos rápidos (causa re-renders masivos).
 
-## 3. Estrategia de Persistencia (Form Drafts & Offline-First)
+## 3. Estrategia de Persistencia "Intelligent Sync" (Offline-First)
 
-Para prevenir pérdida de datos en Wizards largos (User Error, Network Ghost) e implementar una estrategia "Smart Sync":
+Implementación con **TanStack Query (React Query)** y **LocalStorage**.
 
-### Patrón: "Draft First" (Persistent Forms)
+### A. Capa de Lectura (Cache Offline)
 
-1.  **LocalStorage Mirror**: Todo Wizard de >1 paso debe usar un hook `useFormPersist(key)`.
-    - **Write**: `watch()` changes -> Debounce (500ms) -> `localStorage.setItem`.
-    - **Read**: `useEffect` on mount -> `reset(JSON.parse(localStorage))`.
+Usar `persistQueryClient` para guardar la caché de consultas críticas en LocalStorage. Si el usuario pierde conexión, la App carga desde disco.
 
-2.  **Supabase Sync (Backup en la Nube)**:
-    - Cuando el usuario tiene conexión, el `localStorage` debe sincronizarse silenciosamente con una tabla de `drafts` (si existe) o el campo `template_snapshot` en la tabla `cases`.
-    - **Trigger de Sync**: `onBlur` de campos críticos o cada 30 segundos si hay cambios sucios.
+```typescript
+// queryClient.ts
+persistQueryClient({
+  queryClient,
+  persister: createSyncStoragePersister({ storage: window.localStorage }),
+  maxAge: 1000 * 60 * 60 * 24, // 24 horas
+});
+```
 
-3.  **Conflict Resolution ("El Refresh Asesino")**:
-    - **Scenario**: Usuario abre el form en 2 pestañas o vuelve después de días.
-    - **Strategy**:
-      - Al montar, comparar `localStorage.timestamp` vs `serverData.updated_at`.
-      - Si `serverData` es más reciente, **ignorar LocalStorage**.
-      - Si `localStorage` es más reciente (o Server es null), **restaurar Local**.
-    - **UI**: Mostrar "Borrador restaurado" toast si se recuperó del local.
+### B. Capa de Escritura (Drafts & Mutations)
 
-4.  **Clean on Success**: Al recibir `200 OK` del Server Action final, borrar la key del storage.
-5.  **UX Feedback**: Mostrar "Guardado en dispositivo" vs "Guardado en nube" (check discreto) alado del título.
+Para formularios largos (Wizard de Caso), adoptamos "Local-First, Server-Confirm".
+
+1.  **Drafts Locales (Anti-Data-Loss)**:
+    - Hook `useFormPersist('draft_case_123')` guarda cada cambio en LS.
+    - Al volver a la página, detecta si hay draft local.
+
+2.  **Sincronización Inteligente**:
+    - **Auto-Save**: Cada 30s o `onBlur` de pasos, intenta enviar al backend (`cases` table).
+    - **Offline**: Si falla (Network Error), marca el estado visual como "Guardado en dispositivo (Sin conexión)".
+    - **Reconnection**: `window.addEventListener('online')` dispara reintento de guardado.
+
+3.  **Conflict Handling (Server Wins)**:
+    - Si el servidor tiene `updated_at` más reciente que el inicio de la sesión local, alerta al usuario: "¿Desea sobrescribir con la versión del servidor o usar su copia local?".
+
+### C. UX de Estado de Sync
+
+Indicadores visuales obligatorios en el header del Wizard:
+
+- 🟢 "Guardado en la nube" (All synced).
+- 🟡 "Guardando..." (Network request in flight).
+- 🟠 "Guardado localmente" (Offline / Pending Sync).
+- 🔴 "Error al guardar" (Validation Error).

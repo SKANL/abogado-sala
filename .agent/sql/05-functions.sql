@@ -11,7 +11,7 @@ as $$
 declare
   v_requester_org uuid;
   v_target_org uuid;
-  v_target_role app_role;
+  v_target_role user_role;
   v_admin_count int;
 begin
   -- 1. Check Requester Permissions
@@ -113,5 +113,31 @@ begin
   else
     return false;
   end if;
+end;
+$$;
+
+-- 3. Public RPC: Get Invitation by Token (Security Hole Fix Round 9)
+-- Allows a guest (unauthenticated) to validate a token and see basic info.
+create or replace function public.get_invitation_by_token(p_token text)
+returns table (
+  email text,
+  org_name text,
+  role user_role,
+  status invitation_status
+)
+language plpgsql
+security definer
+as $$
+begin
+  return query
+  select 
+    i.email, 
+    o.name as org_name, 
+    i.role, 
+    i.status
+  from public.invitations i
+  join public.organizations o on o.id = i.org_id
+  where i.token = p_token
+  and i.expires_at > now();
 end;
 $$;

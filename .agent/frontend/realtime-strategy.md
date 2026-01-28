@@ -90,3 +90,11 @@ Si el usuario está en otra pestaña, mostrar un Toast: "Juan acaba de firmar el
 ### Portal (`Co-Browsing Lite`)
 
 - Si el abogado y el cliente están viendo el mismo expediente, los cambios de estado (ej. "Aprobado") se reflejan instantáneamente sin recargar.
+
+### Global Interactions (`Notifications`)
+
+- Suscribirse a `notifications` con filtro `user_id = me`.
+- Al recibir evento `INSERT`:
+  1. Incrementar contador de "Unread" en navbar.
+  2. Disparar **Toast Notification** (Sonner) con título y mensaje.
+  3. Invalidar Query `['notifications']` si el drawer está abierto.
