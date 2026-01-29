@@ -13,11 +13,12 @@ interface DocumentUploadSlotProps {
   caseId: string; // Needed for path structure if we want
   fileId: string; // The database ID of the 'case_files' row
   category: string;
+  description?: string | null;
   status: "pending" | "uploaded" | "missing" | "rejected";
   onSuccess: () => void;
 }
 
-export function DocumentUploadSlot({ caseId, fileId, category, status, onSuccess }: DocumentUploadSlotProps) {
+export function DocumentUploadSlot({ caseId, fileId, category, description, status, onSuccess }: DocumentUploadSlotProps) {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
@@ -76,7 +77,7 @@ export function DocumentUploadSlot({ caseId, fileId, category, status, onSuccess
         <div className="flex items-center justify-between">
              <div className="flex items-center gap-2">
                 <Paperclip className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{category}</span>
+                <span className="text-sm font-medium">{description || category}</span>
              </div>
              {status === 'missing' && <span className="text-xs text-red-500 font-medium">Requerido</span>}
              {status === 'rejected' && <span className="text-xs text-red-500 font-medium">Rechazado - Subir nuevo</span>}
