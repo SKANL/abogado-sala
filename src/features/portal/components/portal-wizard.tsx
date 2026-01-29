@@ -115,6 +115,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
                             category={file.category}
                             description={file.description}
                             status={file.status}
+                            token={token}
                             onSuccess={router.refresh}
                         />
                     ))

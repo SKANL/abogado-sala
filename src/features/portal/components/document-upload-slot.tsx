@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { confirmUploadAction } from "@/features/cases/actions";
+import { confirmPortalUploadAction } from "@/features/portal/actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { UploadCloud, Check, Loader2, Paperclip } from "lucide-react";
@@ -15,10 +16,11 @@ interface DocumentUploadSlotProps {
   category: string;
   description?: string | null;
   status: "pending" | "uploaded" | "missing" | "rejected";
+  token?: string; // Optional: Only for Portal usage
   onSuccess: () => void;
 }
 
-export function DocumentUploadSlot({ caseId, fileId, category, description, status, onSuccess }: DocumentUploadSlotProps) {
+export function DocumentUploadSlot({ caseId, fileId, category, description, status, token, onSuccess }: DocumentUploadSlotProps) {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
@@ -46,7 +48,14 @@ export function DocumentUploadSlot({ caseId, fileId, category, description, stat
         if (uploadError) throw uploadError;
 
         // 2. Confirm
-        const result = await confirmUploadAction(fileId, file.size, filePath);
+        let result;
+        if (token) {
+            // Portal Flow (Explicit Token)
+            result = await confirmPortalUploadAction(token, fileId, filePath, file.size);
+        } else {
+            // Admin/Dashboard Flow (Session Cookie)
+            result = await confirmUploadAction(fileId, file.size, filePath);
+        }
         
         if (!result.success) {
             throw new Error(result.error || "Error confirmando carga");
@@ -57,6 +66,7 @@ export function DocumentUploadSlot({ caseId, fileId, category, description, stat
         onSuccess();
 
     } catch (err: any) {
+        console.error("Upload error:", err);
         toast.error(err.message || "Error al subir documento");
     } finally {
         setUploading(false);

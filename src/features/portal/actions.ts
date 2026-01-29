@@ -116,3 +116,27 @@ export async function submitQuestionnaireAction(
   revalidatePath(`/sala/${token}`);
   return { success: true, data: undefined };
 }
+
+export async function confirmPortalUploadAction(
+    token: string,
+    fileId: string,
+    fileKey: string,
+    fileSize: number
+): Promise<Result<void>> {
+    const supabase = await createClient();
+
+    const { error } = await supabase.rpc("confirm_file_upload_portal", {
+        p_token: token,
+        p_file_id: fileId,
+        p_file_key: fileKey,
+        p_file_size: fileSize
+    });
+
+    if (error) {
+        // console.error("Error confirming portal upload:", error);
+        return handleError(error);
+    }
+
+    revalidatePath(`/sala/${token}`);
+    return { success: true, data: undefined };
+}

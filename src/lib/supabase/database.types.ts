@@ -746,6 +746,15 @@ export type Database = {
         Args: { p_token: string; p_answers: Json }
         Returns: undefined
       }
+      confirm_file_upload_portal: {
+        Args: { 
+            p_token: string
+            p_file_id: string
+            p_file_key: string
+            p_file_size: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       case_status: "draft" | "in_progress" | "review" | "completed"
