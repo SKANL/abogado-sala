@@ -56,6 +56,7 @@ export type Database = {
         Row: {
           case_id: string
           category: string
+          description: string | null
           created_at: string
           exception_reason: string | null
           file_key: string | null
@@ -68,6 +69,7 @@ export type Database = {
         Insert: {
           case_id: string
           category: string
+          description?: string | null
           created_at?: string
           exception_reason?: string | null
           file_key?: string | null
@@ -80,6 +82,7 @@ export type Database = {
         Update: {
           case_id?: string
           category?: string
+          description?: string | null
           created_at?: string
           exception_reason?: string | null
           file_key?: string | null
@@ -116,6 +119,7 @@ export type Database = {
           org_id: string
           status: Database["public"]["Enums"]["case_status"]
           template_snapshot: Json
+          questionnaire_answers: Json | null
           token: string
           updated_at: string
         }
@@ -128,6 +132,7 @@ export type Database = {
           org_id: string
           status?: Database["public"]["Enums"]["case_status"]
           template_snapshot?: Json
+          questionnaire_answers?: Json | null
           token: string
           updated_at?: string
         }
@@ -140,6 +145,7 @@ export type Database = {
           org_id?: string
           status?: Database["public"]["Enums"]["case_status"]
           template_snapshot?: Json
+          questionnaire_answers?: Json | null
           token?: string
           updated_at?: string
         }
