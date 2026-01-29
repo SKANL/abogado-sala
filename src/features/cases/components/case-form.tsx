@@ -137,7 +137,16 @@ export function CaseForm({ clients, templates }: CaseFormProps) {
                 </Card>
             )}
 
-            <input type="hidden" name="template_snapshot" value={JSON.stringify(templateData)} />
+            {/* 
+                Fix: We must save the SCHEMA as the snapshot so the backend knows what files to generate. 
+                Values can be stored in metadata or we can merge them later, but for now 
+                the priority is generating the file requirements.
+            */}
+            <input 
+                type="hidden" 
+                name="template_snapshot" 
+                value={JSON.stringify(selectedTemplate?.schema || {})} 
+            />
             
             <div className="space-y-2">
                  <Label htmlFor="status">Estado Inicial</Label>
