@@ -17,13 +17,13 @@ begin
   -- 1. Check Requester Permissions
   select org_id into v_requester_org from public.profiles where id = auth.uid();
   
-  if not auth.is_admin() then
+  if not public.app_is_admin() then
     raise exception 'Access Denied: Only Admins can remove members.';
   end if;
 
   -- 1b. Check Active Status (Deep Defense)
   -- Uses security definer function to avoid RLS lookup issues
-  if not auth.is_active() then
+  if not public.app_is_active() then
     raise exception 'Access Denied: User is suspended.';
   end if;
 
@@ -179,16 +179,16 @@ begin
   from public.case_files cf
   join public.cases c on c.id = cf.case_id
   where cf.id = p_file_id
-  and c.org_id = auth.org_id()
+  and c.org_id = public.app_get_org_id()
   and (
-    auth.is_admin()
+    public.app_is_admin()
     or exists (
       select 1 from public.clients cl
       where cl.id = c.client_id
       and cl.assigned_lawyer_id = auth.uid()
     )
   )
-  and auth.is_active(); -- Fix: Enforce Soft Delete in RPC
+  and public.app_is_active(); -- Fix: Enforce Soft Delete in RPC
 
   if v_file is null then
     raise exception 'File not found or access denied';
@@ -237,7 +237,7 @@ begin
     i.expires_at
   from public.invitations i
   where i.token = p_token;
-  -- RLS ensures org_id = auth.org_id() and auth.is_admin()
+  -- RLS ensures org_id = public.app_get_org_id() and public.app_is_admin()
 end;
 $$;
 
@@ -256,14 +256,14 @@ begin
     select 1 from public.cases c
     where c.id = p_case_id
     and (
-      (auth.is_admin() and c.org_id = auth.org_id())
+      (public.app_is_admin() and c.org_id = public.app_get_org_id())
       or exists (
         select 1 from public.clients cl
         where cl.id = c.client_id
         and cl.assigned_lawyer_id = auth.uid()
       )
     )
-    and auth.is_active() -- Fix: Enforce Soft Delete in RPC
+    and public.app_is_active() -- Fix: Enforce Soft Delete in RPC
   ) then
     raise exception 'Access Denied or Case Not Found';
   end if;

@@ -18,13 +18,13 @@ declare
   v_admin_count int;
 begin
   -- 1. Check Requester Permissions
-  select org_id into v_requester_org from public.profiles where id = auth.uid();
+  v_requester_org := public.app_get_org_id();
   
-  if not auth.is_admin() then
+  if not public.app_is_admin() then
     raise exception 'Access Denied: Only Admins can remove members.';
   end if;
 
-  if not auth.is_active() then
+  if not public.app_is_active() then
      raise exception 'Access Denied: User is suspended.';
   end if;
 
@@ -48,8 +48,8 @@ begin
 
   -- 4. Execute Soft Delete
   -- We set status to 'suspended'. 
-  -- The auth.is_active() function will return FALSE for this user.
-  -- All RLS policies require auth.is_active() = TRUE, so they effectively lose all access.
+  -- The public.app_is_active() function will return FALSE for this user.
+  -- All RLS policies require public.app_is_active() = TRUE, so they effectively lose all access.
   update public.profiles 
   set status = 'suspended', updated_at = now()
   where id = target_user_id;
