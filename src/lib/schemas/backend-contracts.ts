@@ -51,7 +51,7 @@ export const createCaseSchema = z.object({
 
 export const updateCaseSchema = z.object({
   case_id: z.string().uuid(),
-  status: z.enum(["draft", "in_progress", "review", "completed"]),
+  status: z.enum(["draft", "in_progress", "review", "completed", "archived"]),
   current_step_index: z.number().int().min(0).optional(),
 });
 

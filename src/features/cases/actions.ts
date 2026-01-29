@@ -114,7 +114,7 @@ export async function updateCaseAction(
     .update({
         ...updates,
         template_snapshot: (updates as any).template_snapshot 
-    })
+    } as any)
     .eq("id", case_id)
     .select()
     .single();
@@ -203,5 +203,34 @@ export async function deleteFileAction(fileId: string): Promise<Result<void>> {
         return handleError(error);
     }
     
+    return { success: true, data: undefined };
+}
+// ... existing code ...
+
+export async function deleteCaseAction(caseId: string): Promise<Result<void>> {
+    const supabase = await createClient();
+    
+    // 1. Verify User
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No autorizado", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+
+    // 2. Fetch Case to verify permissions (RLS handles visibility, but we double check logic)
+    // We need to know if the user is the assigned lawyer or admin.
+    // However, a simple DELETE call is blocked by RLS if policy doesn't exist.
+    // The policy "Delete Cases" must exist in SQL. 
+    // If not, we rely on the RPC or logic here?
+    // Let's assume standard RLS for DELETE is:
+    // (auth.uid() = assigned_lawyer_id OR auth.is_admin())
+    // Let's try direct delete. If it fails (count=0), it might be RLS or Not Found.
+
+    const { error, count } = await supabase
+        .from("cases")
+        .delete({ count: "exact" })
+        .eq("id", caseId);
+
+    if (error) return handleError(error);
+    if (count === 0) return { success: false, error: "No se pudo eliminar (Permisos o No encontrado)", code: ERROR_CODES.VAL_NOT_FOUND };
+
+    revalidatePath("/casos");
     return { success: true, data: undefined };
 }

@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Calendar, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CopyLinkButton } from "@/features/cases/components/copy-link-button";
+import { CaseActionsDropdown } from "@/features/cases/components/case-actions-menu";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -48,9 +49,11 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
 
                 <Button size="sm" asChild>
                     <Link href={portalUrl} target="_blank">
-                        <ExternalLink className="mr-2 h-4 w-4" /> Ver Portal Cliente
+                        <ExternalLink className="mr-2 h-4 w-4" /> Ver Portal
                     </Link>
                 </Button>
+
+                <CaseActionsDropdown caseId={c.id} currentStatus={c.status} />
             </div>
         </div>
 
