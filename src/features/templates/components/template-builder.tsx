@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createTemplateAction } from '../actions';
+import { createTemplateAction, updateTemplateAction } from '../actions';
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
 
@@ -22,11 +22,32 @@ interface TemplateField {
   required: boolean;
 }
 
-export function TemplateBuilder() {
+interface TemplateBuilderProps {
+    initialData?: {
+        id: string;
+        title: string;
+        scope: string;
+        schema: any;
+    };
+}
+
+export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
   const router = useRouter();  
-  const [title, setTitle] = useState("Nueva Plantilla");
-  const [scope, setScope] = useState("private");
-  const [fields, setFields] = useState<TemplateField[]>([]);
+  const isEditing = !!initialData;
+  const [title, setTitle] = useState(initialData?.title || "Nueva Plantilla");
+  const [scope, setScope] = useState(initialData?.scope || "private");
+  
+  // Initialize fields from schema object
+  const initialFields: TemplateField[] = initialData?.schema 
+    ? Object.entries(initialData.schema).map(([id, val]: [string, any]) => ({
+        id,
+        label: val.label,
+        type: val.type as FieldType,
+        required: !!val.required
+    }))
+    : [];
+
+  const [fields, setFields] = useState<TemplateField[]>(initialFields);
   const [isSaving, setIsSaving] = useState(false);
 
   const sensors = useSensors(
@@ -79,15 +100,18 @@ export function TemplateBuilder() {
     }, {} as Record<string, any>);
 
     const formData = new FormData();
+    if (isEditing) formData.append("id", initialData.id);
     formData.append("title", title);
     formData.append("scope", scope);
     formData.append("schema", JSON.stringify(schema));
 
-    const result = await createTemplateAction(null, formData);
+    const action = isEditing ? updateTemplateAction : createTemplateAction;
+    const result = await action(null, formData);
 
     if (result.success) {
-        toast.success("Plantilla creada exitosamente");
+        toast.success(isEditing ? "Plantilla actualizada" : "Plantilla creada");
         router.push("/plantillas");
+        router.refresh();
     } else {
         toast.error(result.error || "Error al guardar la plantilla");
     }

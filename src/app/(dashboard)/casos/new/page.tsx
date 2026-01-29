@@ -9,7 +9,7 @@ export default async function NewCasePage() {
     const { data: clients } = await supabase
         .from("clients")
         .select("id, full_name")
-        .eq("status", "active")
+        .in("status", ["active", "prospect"])
         .order("full_name");
 
     // Fetch available templates

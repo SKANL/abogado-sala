@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Copy, ExternalLink, Calendar, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CopyLinkButton } from "@/features/cases/components/copy-link-button";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -26,8 +26,6 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   }
 
   // Calculate URL for client portal
-  // Assuming configured base URL or constructed from headers (harder in server component without absolute logic)
-  // For now using relative.
   const portalUrl = `/sala/${c.token}`;
 
   return (
@@ -46,18 +44,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                 </p>
             </div>
              <div className="flex items-center gap-2">
-                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <Copy className="mr-2 h-4 w-4" /> Copiar Link
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Copiar enlace para cliente</p>
-                        </TooltipContent>
-                    </Tooltip>
-                 </TooltipProvider>
+                <CopyLinkButton token={c.token} />
 
                 <Button size="sm" asChild>
                     <Link href={portalUrl} target="_blank">

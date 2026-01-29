@@ -43,7 +43,23 @@ export async function createCaseAction(
     return { success: false, error: "No org_id found", code: ERROR_CODES.AUTH_UNAUTHORIZED };
   }
 
-  // Note: Cast template_snapshot to Json if needed, but Supabase types usually match Json with generic objects.
+  // 1. Check if client is a prospect and promote to active (Conversion on Creation)
+  const { data: clientStatus } = await supabase
+    .from("clients")
+    .select("status")
+    .eq("id", parse.data.client_id)
+    .single();
+
+  if (clientStatus?.status === 'prospect') {
+      await supabase
+        .from("clients")
+        .update({ status: 'active' })
+        .eq("id", parse.data.client_id);
+      
+      revalidatePath("/clientes");
+  }
+
+  // 2. Create the case
   const { error, data: newCase } = await supabase
     .from("cases")
     .insert({
@@ -51,7 +67,7 @@ export async function createCaseAction(
       org_id,
       token,
       current_step_index: 0,
-      template_snapshot: parse.data.template_snapshot as any, // Explicit cast to satisfy Json type if strictly typed
+      template_snapshot: parse.data.template_snapshot as any,
     })
     .select()
     .single();
