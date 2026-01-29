@@ -13,8 +13,8 @@ begin
   -- Update auth.users metadata when profile changes
   -- We preserve existing metadata keys and only overwrite org_id/role
   update auth.users
-  set raw_app_metadata = 
-    coalesce(raw_app_metadata, '{}'::jsonb) || 
+  set raw_app_meta_data = 
+    coalesce(raw_app_meta_data, '{}'::jsonb) || 
     jsonb_build_object(
       'org_id', new.org_id,
       'role', new.role
