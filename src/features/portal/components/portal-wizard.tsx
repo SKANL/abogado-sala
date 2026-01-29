@@ -5,6 +5,7 @@ import { CasePublic, advanceStepAction } from "@/features/portal/actions";
 import { WelcomeStep } from "./steps/welcome-step";
 import { ConsentStep } from "./steps/consent-step";
 import { CompletionStep } from "./steps/completion-step";
+import { QuestionnaireStep } from "./steps/questionnaire-step";
 import { DocumentUploadSlot } from "./document-upload-slot";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,24 +24,24 @@ interface PortalWizardProps {
 
 export function PortalWizard({ token, initialCaseData, clientName, files }: PortalWizardProps) {
   const router = useRouter();
-  // We use local state for immediate UI feedback, but sync with server actions.
-  // current_step_index from DB:
-  // 0: Welcome
-  // 1: Consent
-  // 2: Uploads (This might be multiple internal steps conceptually, or just one big step)
-  // 3: Review/Completion
   
-  // NOTE: Schema-driven would be more dynamic, but for now we map 0->Welcome, 1->Consent, 2->Docs, 3->Done.
+  // NOTE: Schema-driven would be more dynamic, but for now we map:
+  // 0 -> Welcome
+  // 1 -> Consent
+  // 2 -> Questionnaire (New)
+  // 3 -> Docs
+  // 4 -> Done
   const [currentStep, setCurrentStep] = useState(initialCaseData.current_step_index || 0);
 
   const stepsMetadata = [
     { title: "Bienvenida", description: "Inicio" },
     { title: "Consentimiento", description: "Términos Legales" },
+    { title: "Información", description: "Datos Básicos" },
     { title: "Documentación", description: "Carga de Archivos" },
     { title: "Finalizado", description: "Revisión" },
   ];
 
-  const totalSteps = stepsMetadata.length - 1; // 0 to 3
+  const totalSteps = stepsMetadata.length - 1; 
   const progress = (currentStep / totalSteps) * 100;
 
   const handleStepComplete = async (nextStep: number) => {
@@ -51,7 +52,6 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
     const result = await advanceStepAction(token, nextStep);
     if (!result.success) {
       toast.error("Error guardando progreso", { description: result.error });
-      // Revert on error? Or just let user try again.
     } else {
         router.refresh();
     }
@@ -90,6 +90,15 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
         )}
 
         {currentStep === 2 && (
+            <QuestionnaireStep 
+                templateSnapshot={initialCaseData.template_snapshot}
+                currentAnswers={initialCaseData.questionnaire_answers}
+                token={token}
+                onNext={() => handleStepComplete(3)}
+            />
+        )}
+
+        {currentStep === 3 && (
           <div className="space-y-6">
              <div className="text-center space-y-2 mb-6">
                 <h1 className="text-2xl font-bold">Documentos Requeridos</h1>
@@ -118,7 +127,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
 
              <div className="flex justify-end pt-6">
                 <Button 
-                    onClick={() => handleStepComplete(3)}
+                    onClick={() => handleStepComplete(4)}
                     disabled={!areAllFilesUploaded}
                     size="lg"
                 >
@@ -128,7 +137,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
           </div>
         )}
 
-        {currentStep >= 3 && (
+        {currentStep >= 4 && (
           <CompletionStep />
         )}
       </div>

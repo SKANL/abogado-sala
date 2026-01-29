@@ -736,6 +736,10 @@ export type Database = {
         Args: { p_step_index: number; p_token: string }
         Returns: undefined
       }
+      submit_questionnaire_answers: {
+        Args: { p_token: string; p_answers: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       case_status: "draft" | "in_progress" | "review" | "completed"

@@ -93,3 +93,26 @@ export async function advanceStepAction(
   revalidatePath(`/sala/${token}`);
   return { success: true, data: undefined };
 }
+
+export async function submitQuestionnaireAction(
+  token: string,
+  answers: Record<string, string>
+): Promise<Result<void>> {
+  if (!token || !answers) {
+     return { success: false, error: "Respuestas requeridas", code: ERROR_CODES.VAL_INVALID_INPUT };
+  }
+
+  const supabase = await createClient();
+  
+  const { error } = await supabase.rpc("submit_questionnaire_answers", {
+    p_token: token,
+    p_answers: answers
+  });
+
+  if (error) {
+    return handleError(error);
+  }
+
+  revalidatePath(`/sala/${token}`);
+  return { success: true, data: undefined };
+}
