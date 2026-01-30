@@ -94,7 +94,7 @@ export function CaseFilesList({ files }: CaseFilesListProps) {
                     {file.updated_at && (
                         <>
                             <span>•</span>
-                            <span>{new Date(file.updated_at).toLocaleDateString()}</span>
+                            <span>{new Date(file.updated_at).toLocaleDateString("es-MX", { timeZone: "UTC" })}</span>
                         </>
                     )}
                 </div>

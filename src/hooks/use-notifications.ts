@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRealtimeSmartSync } from "./use-realtime-smart-sync";
+import { useEffect, useState } from "react";
 
 export interface Notification {
   id: string;
@@ -16,109 +17,76 @@ export interface Notification {
 }
 
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
   const supabase = createClient();
-  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Fetch initial
+  // 1. Get User ID safely (client-side)
   useEffect(() => {
-    const fetchNotifications = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) setUserId(data.user.id);
+    })();
+  }, [supabase]);
 
+  // 2. Fetch with React Query (SSOT)
+  const { data: notifications = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['notifications', userId],
+    queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) {
-        console.error("Error fetching notifications", error);
-        return;
+      if (error) throw error;
+      return data as Notification[];
+    },
+    enabled: !!userId,
+  });
+
+  // 3. Smart Sync (Realtime -> Invalidate)
+  useRealtimeSmartSync({
+    channelName: 'notifications-channel',
+    table: 'notifications',
+    filter: userId ? `user_id=eq.${userId}` : undefined,
+    queryKey: ['notifications', userId],
+    onPayload: (payload) => {
+      if (payload.eventType === 'INSERT') {
+        const newNotif = payload.new as Notification;
+        toast(newNotif.title, { description: newNotif.message });
       }
+    }
+  });
 
-      setNotifications(data as Notification[]);
-      setLoading(false);
-    };
-
-    fetchNotifications();
-  }, [supabase]);
-
-  // Realtime
-  useEffect(() => {
-    const setupRealtime = async () => {
-       const { data: { user } } = await supabase.auth.getUser();
-       if (!user) return;
-
-       const channel = supabase
-         .channel('user-notifications')
-         .on(
-           'postgres_changes',
-           {
-             event: 'INSERT',
-             schema: 'public',
-             table: 'notifications',
-             filter: `user_id=eq.${user.id}`
-           },
-           (payload) => {
-             const newNotif = payload.new as Notification;
-             setNotifications(prev => [newNotif, ...prev]);
-             toast(newNotif.title, { description: newNotif.message });
-             router.refresh();
-           }
-         )
-         .subscribe();
-
-       return () => {
-         supabase.removeChannel(channel);
-       };
-    };
-    
-    setupRealtime();
-  }, [supabase, router]);
-
-  // Derived state
-  useEffect(() => {
-      setUnreadCount(notifications.filter(n => !n.read).length);
-  }, [notifications]);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Actions
   const markAsRead = async (id: string) => {
-      // Optimistic
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-      
-      const { error } = await supabase
-          .from('notifications')
-          .update({ read: true })
-          .eq('id', id);
-          
-      if (error) {
-          // Revert if failed (simplified for now actions usually succeed)
-          console.error("Failed to mark as read");
-      }
+    // Optimistic update via patching cache could be added here, 
+    // but meant for "Hybrid Strategy", invalidation is safer for marking read if logic is simple.
+    // For now we'll do simple async update + refetch triggers.
+    
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    refetch(); // Ensure UI sync
   };
 
   const markAllAsRead = async () => {
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        await supabase
-            .from('notifications')
-            .update({ read: true })
-            .eq('user_id', user.id)
-            .eq('read', false);
-      }
+    if (!userId) return;
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('read', false);
+    refetch();
   };
 
   return {
-      notifications,
-      unreadCount,
-      loading,
-      markAsRead,
-      markAllAsRead
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead
   };
 }

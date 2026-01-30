@@ -8,26 +8,24 @@ interface LawyerDashboardProps {
     userId: string;
 }
 
+
+import { DashboardRealtimeListener } from "./dashboard-realtime-listener";
+
 export async function LawyerDashboard({ userId }: LawyerDashboardProps) {
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const orgId = user?.app_metadata?.org_id;
 
     // Fetch My Cases Stats
     const { count: myCasesCount } = await supabase
         .from("cases")
         .select("*", { count: "exact", head: true })
-        // Assuming we might have an assigned_lawyer_id on the case derived from client or direct assignment.
-        // For now, let's use the standard client assignment check if cases table doesn't have lawyer_id directly yet, 
-        // OR rely on RLS if 'member' role only sees their own assigned clients' cases.
-        // Checking backend-contracts: "clients -> assigned_lawyer_id".
-        // So we join clients.
-        // Ideally: .eq("client.assigned_lawyer_id", userId) but Supabase query syntax for deep filtering on count is tricky without embedding.
-        // Let's rely on RLS "Clients: assigned_lawyer_id = auth.uid()" logic if implemented, 
-        // otherwise fetching cases implies fetching clients.
-        // Simpler for MVP: Just count cases visible to this user (RLS restricted).
         .in("status", ["in_progress", "review"]);
 
   return (
     <div className="space-y-6">
+      <DashboardRealtimeListener userId={userId} orgId={orgId} />
       
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

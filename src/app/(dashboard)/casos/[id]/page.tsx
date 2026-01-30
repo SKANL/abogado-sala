@@ -10,6 +10,8 @@ import { CopyLinkButton } from "@/features/cases/components/copy-link-button";
 import { CaseActionsDropdown } from "@/features/cases/components/case-actions-menu";
 import { CaseFilesList } from "@/features/cases/components/case-files-list";
 
+import { CaseRealtimeListener } from "@/features/cases/components/case-realtime-listener";
+
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
   const { id } = await params;
@@ -33,6 +35,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
 
   return (
     <div className="space-y-6">
+        <CaseRealtimeListener caseId={id} />
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
@@ -157,7 +160,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                             <span className="text-muted-foreground">Vencimiento</span>
                             <span className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {c.expires_at ? new Date(c.expires_at).toLocaleDateString() : "Indefinido"}
+                                {c.expires_at ? new Date(c.expires_at).toLocaleDateString("es-MX", { timeZone: "UTC" }) : "Indefinido"}
                             </span>
                         </div>
                     </CardContent>

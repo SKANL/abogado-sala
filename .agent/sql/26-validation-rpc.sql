@@ -21,7 +21,7 @@ BEGIN
     o.name as org_name,
     o.logo_url as org_logo_url,
     c.full_name as client_name,
-    cse.status as case_status,
+    cse.status::text as case_status, -- Cast enum to text
     cse.created_at as case_created_at
   FROM cases cse
   JOIN organizations o ON o.id = cse.org_id
