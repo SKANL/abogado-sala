@@ -45,6 +45,16 @@ import Image from "next/image";
 // For the React component, I'll fetch data on the server.
 import { createClient as createServerClient } from "@supabase/supabase-js"; // Direct backend client strictly for this
 
+// Define exact return shape from RPC
+interface ValidationData {
+  found: boolean;
+  org_name: string;
+  org_logo_url: string | null;
+  client_name: string;
+  case_status: string;
+  case_created_at: string;
+}
+
 export default async function ValidationPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   
@@ -55,16 +65,12 @@ export default async function ValidationPage({ params }: { params: Promise<{ tok
   );
 
   // We can query directly since we have service role, but we must limit fields manually for security.
-  const { data: caseData } = await supabase
-    .from("cases")
-    .select(`
-        created_at, 
-        status, 
-        organizations (name, logo_url), 
-        clients (full_name)
-    `)
-    .eq("token", token)
+  // Use standard client, RPC handles security
+  const { data, error } = await supabase
+    .rpc('get_case_validation', { p_token: token })
     .single();
+    
+  const caseData = data as ValidationData | null;
 
   const isValid = !!caseData;
 
@@ -72,10 +78,10 @@ export default async function ValidationPage({ params }: { params: Promise<{ tok
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center pb-2">
-            {isValid && Array.isArray(caseData.organizations) && caseData.organizations[0]?.logo_url && (
+            {isValid && caseData.org_logo_url && (
                 <div className="mx-auto mb-4 relative w-24 h-24">
                      <Image 
-                        src={caseData.organizations[0].logo_url} 
+                        src={caseData.org_logo_url} 
                         alt="Logo" 
                         fill 
                         className="object-contain"
@@ -108,25 +114,25 @@ export default async function ValidationPage({ params }: { params: Promise<{ tok
                          <div className="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span className="text-muted-foreground text-sm">Despacho</span>
                             <span className="font-semibold text-gray-900">
-                                {Array.isArray(caseData.organizations) ? caseData.organizations[0]?.name : ''}
+                                {caseData.org_name}
                             </span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span className="text-muted-foreground text-sm">Cliente</span>
                             <span className="font-semibold text-gray-900">
-                                {Array.isArray(caseData.clients) ? caseData.clients[0]?.full_name : ''}
+                                {caseData.client_name}
                             </span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span className="text-muted-foreground text-sm">Estado</span>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                                {caseData.status}
+                                {caseData.case_status}
                             </span>
                         </div>
                          <div className="flex justify-between items-center">
                             <span className="text-muted-foreground text-sm">Fecha de Inicio</span>
                             <span className="text-gray-900">
-                                {new Date(caseData.created_at).toLocaleDateString()}
+                                {new Date(caseData.case_created_at).toLocaleDateString()}
                             </span>
                         </div>
                     </div>
