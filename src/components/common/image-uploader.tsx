@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, ChangeEvent } from "react";
+import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -30,6 +30,11 @@ export function ImageUploader({
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(defaultUrl || null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Sync preview with defaultUrl or incoming prop changes
+  useEffect(() => {
+      if (defaultUrl) setPreview(defaultUrl);
+  }, [defaultUrl]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 

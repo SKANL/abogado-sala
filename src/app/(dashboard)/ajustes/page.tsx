@@ -14,7 +14,7 @@ import { ImageUploader } from "@/components/common/image-uploader";
 const initialState: Result<any> = { success: false, error: "" };
 
 export default function SettingsPage() {
-    const { org } = useAuth();
+    const { org, loading } = useAuth(); // Correct property name is 'loading'
     const [state, action, isPending] = useActionState(updateOrganizationAction, initialState);
 
     useEffect(() => {
@@ -24,6 +24,15 @@ export default function SettingsPage() {
             toast.error(state.error);
         }
     }, [state]);
+
+    // Initial Loading State
+    if (loading || !org) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -48,7 +57,8 @@ export default function SettingsPage() {
                             <Input 
                                 id="name" 
                                 name="name" 
-                                defaultValue={org?.name} 
+                                defaultValue={org.name} 
+                                key={org.name} // Force update if name changes
                                 disabled={isPending} 
                             />
                             {!state.success && state.validationErrors?.name && (

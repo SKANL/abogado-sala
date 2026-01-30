@@ -144,9 +144,13 @@ export default async function ValidationPage({ params }: { params: Promise<{ tok
                     </div>
                 </div>
             ) : (
-                 <div className="bg-red-50 p-4 rounded-lg border border-red-100 text-center">
-                    <p className="text-red-800 text-sm">
-                        Si cree que esto es un error, por favor contacte directamente al despacho emisor.
+                 <div className="bg-red-50 p-4 rounded-lg border border-red-100 text-center space-y-2">
+                    <p className="text-red-800 font-medium">Documento no encontrado</p>
+                    <p className="text-red-600 text-sm">
+                        El código escaneado no existe validado en nuestra plataforma.
+                    </p>
+                    <p className="text-xs text-gray-500 pt-2">
+                        ID: {token.slice(0, 8)}...
                     </p>
                 </div>
             )}
