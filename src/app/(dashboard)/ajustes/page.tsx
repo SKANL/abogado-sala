@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Result } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ImageUploader } from "@/components/common/image-uploader";
 
 const initialState: Result<any> = { success: false, error: "" };
 
@@ -78,15 +79,28 @@ export default function SettingsPage() {
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="logo_url">URL del Logo</Label>
-                            <Input 
-                                id="logo_url" 
-                                name="logo_url" 
-                                defaultValue={org?.logo_url || ""} 
-                                placeholder="https://..."
-                                disabled={isPending} 
+                        <div className="space-y-4">
+                            <Label>Logo del Despacho</Label>
+                            
+                            {/* Hidden Input for Form Submission */}
+                            <input type="hidden" name="logo_url" defaultValue={org?.logo_url || ""} id="hidden-logo-url" />
+                            
+                            <ImageUploader 
+                                bucket="organization-assets" 
+                                folderPath={org?.id}
+                                defaultUrl={org?.logo_url}
+                                className="w-full"
+                                aspectRatio="auto"
+                                onUploadComplete={(url) => {
+                                    const input = document.getElementById("hidden-logo-url") as HTMLInputElement;
+                                    if(input) input.value = url;
+                                }}
+                                onRemove={() => {
+                                    const input = document.getElementById("hidden-logo-url") as HTMLInputElement;
+                                    if(input) input.value = "";
+                                }}
                             />
+
                              {!state.success && state.validationErrors?.logo_url && (
                                 <p className="text-sm text-destructive">{state.validationErrors.logo_url[0]}</p>
                             )}

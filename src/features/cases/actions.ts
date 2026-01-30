@@ -7,6 +7,7 @@ import { Result } from "@/types";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
+import { logActivity } from "@/lib/services/audit-service";
 
 export async function createCaseAction(
   prevState: any,
@@ -78,6 +79,16 @@ export async function createCaseAction(
 
   revalidatePath("/casos");
   revalidatePath(`/clientes/${parse.data.client_id}`);
+
+  // Log Activity
+  await logActivity({
+      action: 'case_created',
+      entityType: 'case',
+      entityId: newCase.id,
+      orgId: org_id,
+      metadata: { case_title: (newCase.template_snapshot as any)?.title || 'Nuevo Caso' }
+  });
+
   return { success: true, data: newCase };
 }
 
@@ -162,6 +173,15 @@ export async function confirmUploadAction(
     return handleError(error);
   }
 
+  if (data) {
+       await logActivity({
+          action: 'file_uploaded',
+          entityType: 'file',
+          entityId: fileId,
+          metadata: { file_key: key, file_size: size }
+      });
+  }
+
   return { success: true, data };
 }
 
@@ -203,6 +223,13 @@ export async function deleteFileAction(fileId: string): Promise<Result<void>> {
         return handleError(error);
     }
     
+    await logActivity({
+        action: 'file_deleted',
+        entityType: 'file',
+        entityId: fileId,
+        metadata: { file_key: file?.file_key }
+    });
+
     return { success: true, data: undefined };
 }
 // ... existing code ...
@@ -285,6 +312,15 @@ export async function finalizeCaseAction(caseId: string): Promise<Result<any>> {
         console.error("Failed to create zip job", e);
     }
 
+    // Log Activity
+    await logActivity({
+        action: 'status_changed',
+        entityType: 'case',
+        entityId: caseId,
+        orgId: user.app_metadata.org_id,
+        metadata: { new_status: 'completed' }
+    });
+
     revalidatePath("/casos");
     return { success: true, data: { message: "Procesando descarga..." } };
 }
@@ -304,6 +340,14 @@ export async function requestZipExportAction(caseId: string): Promise<Result<voi
             type: 'zip_export',
             metadata: { case_id: caseId }
         });
+        
+        await logActivity({
+            action: 'zip_exported',
+            entityType: 'case',
+            entityId: caseId,
+            orgId: user.app_metadata.org_id
+        });
+
         return { success: true, data: undefined };
     } catch (e: any) {
         console.error("Failed to create zip job", e);
