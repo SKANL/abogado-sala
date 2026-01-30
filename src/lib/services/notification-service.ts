@@ -8,6 +8,7 @@ export async function createNotification(
         title: string;
         message: string;
         type: 'info' | 'warning' | 'success' | 'error';
+        metadata?: Record<string, any>;
     }
 ) {
     // Fire and forget (don't block main thread too much, but wait for ack)
@@ -18,7 +19,8 @@ export async function createNotification(
             org_id: params.orgId,
             title: params.title,
             message: params.message,
-            type: params.type
+            type: params.type,
+            metadata: params.metadata || {}
         });
     
     if (error) {

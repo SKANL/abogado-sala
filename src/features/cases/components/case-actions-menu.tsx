@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Archive, Trash2, RotateCcw } from "lucide-react";
+import { MoreVertical, Archive, Trash2, RotateCcw, CheckCircle, FileArchive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -21,7 +21,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteCaseAction, updateCaseAction } from "../actions";
+import { deleteCaseAction, updateCaseAction, finalizeCaseAction, requestZipExportAction } from "../actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -54,11 +54,9 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
 
     const handleArchive = async (archive: boolean) => {
         setLoading(true);
-        const newStatus = archive ? 'archived' : 'draft'; // Restore to draft if unarchiving? Or maybe review? defaulting to draft for safety.
+        const newStatus = archive ? 'archived' : 'draft'; 
         
         try {
-            // Need to pass formData-like or update schema to accept raw object?
-            // The action expects FormData. Let's create one.
             const formData = new FormData();
             formData.append("case_id", caseId);
             formData.append("status", newStatus);
@@ -71,6 +69,42 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
             }
         } catch (error) {
             toast.error("Error al actualizar estado");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFinalize = async () => {
+        setLoading(true);
+        try {
+            const result = await finalizeCaseAction(caseId);
+            if (result.success) {
+                toast.success("Expediente finalizado", {
+                    description: "La descarga del ZIP se ha puesto en cola."
+                });
+            } else {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            toast.error("Error al finalizar");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportZip = async () => {
+        setLoading(true);
+        try {
+            const result = await requestZipExportAction(caseId);
+            if (result.success) {
+                toast.success("Solicitud enviada", {
+                    description: "Se te notificará cuando el archivo esté listo."
+                });
+            } else {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            toast.error("Error al solicitar exportación");
         } finally {
             setLoading(false);
         }
@@ -91,12 +125,23 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
                     
                     {currentStatus === 'archived' ? (
                          <DropdownMenuItem onClick={() => handleArchive(false)}>
-                            <RotateCcw className="mr-2 h-4 w-4" /> Restore (Draft)
+                            <RotateCcw className="mr-2 h-4 w-4" /> Restaurar (Borrador)
                         </DropdownMenuItem>
                     ) : (
-                        <DropdownMenuItem onClick={() => handleArchive(true)}>
-                            <Archive className="mr-2 h-4 w-4" /> Archivar
-                        </DropdownMenuItem>
+                        <>
+                            {currentStatus !== 'completed' ? (
+                                <DropdownMenuItem onClick={handleFinalize} className="text-blue-600 focus:text-blue-700">
+                                    <FileArchive className="mr-2 h-4 w-4" /> Finalizar y Descargar
+                                </DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem onClick={handleExportZip}>
+                                    <FileArchive className="mr-2 h-4 w-4" /> Exportar ZIP
+                                </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => handleArchive(true)}>
+                                <Archive className="mr-2 h-4 w-4" /> Archivar
+                            </DropdownMenuItem>
+                        </>
                     )}
 
                     <DropdownMenuSeparator />

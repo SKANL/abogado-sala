@@ -254,3 +254,59 @@ export async function getSignedFileUrlAction(filePath: string): Promise<Result<s
      return { success: false, error: "Error interno" };
   }
 }
+
+import { createJob } from "@/lib/services/job-service";
+
+export async function finalizeCaseAction(caseId: string): Promise<Result<any>> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user?.app_metadata?.org_id) {
+        return { success: false, error: "Unauthorized", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+    }
+
+    // 1. Update status to completed
+    const { error: updateError } = await supabase
+        .from("cases")
+        .update({ status: 'completed' })
+        .eq("id", caseId);
+
+    if (updateError) return handleError(updateError);
+
+    // 2. Create Zip Job
+    try {
+        await createJob(supabase, {
+            orgId: user.app_metadata.org_id,
+            requesterId: user.id, 
+            type: 'zip_export',
+            metadata: { case_id: caseId }
+        });
+    } catch (e) {
+        console.error("Failed to create zip job", e);
+    }
+
+    revalidatePath("/casos");
+    return { success: true, data: { message: "Procesando descarga..." } };
+}
+
+export async function requestZipExportAction(caseId: string): Promise<Result<void>> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user?.app_metadata?.org_id) {
+        return { success: false, error: "Unauthorized", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+    }
+
+    try {
+        await createJob(supabase, {
+            orgId: user.app_metadata.org_id,
+            requesterId: user.id, 
+            type: 'zip_export',
+            metadata: { case_id: caseId }
+        });
+        return { success: true, data: undefined };
+    } catch (e: any) {
+        console.error("Failed to create zip job", e);
+        return { success: false, error: e.message || "Error al solicitar exportación" };
+    }
+}

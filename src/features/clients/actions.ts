@@ -65,7 +65,8 @@ export async function createClientAction(
       orgId: org_id,
       title: "Nuevo Cliente",
       message: `Se ha creado el cliente ${newClient.full_name}`,
-      type: "success"
+      type: "success",
+      metadata: { link: `/clientes/${newClient.id}` }
   });
 
   return { success: true, data: newClient };
