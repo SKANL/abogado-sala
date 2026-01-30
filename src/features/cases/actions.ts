@@ -234,3 +234,23 @@ export async function deleteCaseAction(caseId: string): Promise<Result<void>> {
     revalidatePath("/casos");
     return { success: true, data: undefined };
 }
+
+export async function getSignedFileUrlAction(filePath: string): Promise<Result<string>> {
+  try {
+    const supabase = await createClient();
+    
+    // Create a signed URL valid for 1 hour
+    const { data, error } = await supabase.storage
+      .from('case-files')
+      .createSignedUrl(filePath, 3600);
+
+    if (error) {
+      console.error("Error creating signed URL:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data.signedUrl };
+  } catch (error) {
+     return { success: false, error: "Error interno" };
+  }
+}

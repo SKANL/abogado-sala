@@ -9,7 +9,7 @@ interface Organization {
     name: string;
     slug: string;
     role: "owner" | "admin" | "member"; // Current user's role in org
-    plan_tier: "free" | "pro" | "enterprise";
+    plan_tier: "free" | "pro" | "enterprise" | "trial" | "basic";
     plan_status: "active" | "trialing" | "past_due" | "canceled" | "unpaid";
     trial_ends_at?: string;
 }

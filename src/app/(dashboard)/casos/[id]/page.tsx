@@ -2,11 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, ExternalLink, Calendar, FileText } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Copy, ExternalLink, Calendar, FileText, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CopyLinkButton } from "@/features/cases/components/copy-link-button";
 import { CaseActionsDropdown } from "@/features/cases/components/case-actions-menu";
+import { CaseFilesList } from "@/features/cases/components/case-files-list";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -60,42 +62,59 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         <div className="grid gap-6 md:grid-cols-3">
             {/* Left Column: Details & Client */}
             <div className="space-y-6 md:col-span-2">
-                 {/* Files Section */}
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <FileText className="h-4 w-4" /> Archivos del Expediente
-                        </CardTitle>
-                        <CardDescription>Documentos subidos por el cliente o el despacho.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {c.files && c.files.length > 0 ? (
-                            <ul className="space-y-2">
-                                {c.files.map((file: any) => (
-                                    <li key={file.id} className="flex items-center justify-between p-2 border rounded-md text-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
-                                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium">{file.description || file.category || "Sin título"}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {(file.file_size / 1024).toFixed(1)} KB • {file.status}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {/* Actions like View/Download would go here */}
-                                        <Button variant="ghost" size="sm">Ver</Button>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed rounded-md">
-                                No hay archivos cargados aún.
-                            </div>
-                        )}
-                    </CardContent>
-                 </Card>
+                 
+                 <Tabs defaultValue="documents" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+                        <TabsTrigger value="documents">Documentación</TabsTrigger>
+                        <TabsTrigger value="questionnaire">Cuestionario</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="documents" className="mt-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <FileText className="h-4 w-4" /> Archivos del Expediente
+                                </CardTitle>
+                                <CardDescription>Documentos subidos por el cliente o el despacho.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <CaseFilesList files={c.files || []} />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="questionnaire" className="mt-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <ClipboardList className="h-4 w-4" /> Respuestas del Cliente
+                                </CardTitle>
+                                <CardDescription>Datos recopilados a través del cuestionario inicial.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4 text-sm">
+                                {c.questionnaire_answers && Object.keys(c.questionnaire_answers as object).length > 0 ? (
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {Object.entries(c.questionnaire_answers as Record<string, string>).map(([key, value]) => {
+                                            // Try to find label from template snapshot if possible
+                                            const field = (c.template_snapshot as any)?.[key];
+                                            const label = field?.label || key;
+                                            return (
+                                                <div key={key} className="p-3 bg-muted/20 rounded-md border">
+                                                    <span className="text-muted-foreground block text-xs uppercase tracking-wider mb-1">{label}</span>
+                                                    <span className="font-medium text-foreground">{value}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                     <div className="text-sm text-muted-foreground py-8 text-center">
+                                        El cliente aún no ha completado el cuestionario.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                 </Tabs>
             </div>
 
             {/* Right Column: Meta & Actions */}
@@ -111,11 +130,11 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                          </div>
                          <div>
                             <span className="text-muted-foreground block text-xs">Email</span>
-                            <span>{c.client?.email || "N/A"}</span>
+                            <span>{c.client?.email || "No registrado"}</span>
                          </div>
                          <div>
                             <span className="text-muted-foreground block text-xs">Teléfono</span>
-                            <span>{c.client?.phone || "N/A"}</span>
+                            <span>{c.client?.phone || "No registrado"}</span>
                          </div>
                          <div className="pt-2">
                              <Button variant="secondary" size="sm" className="w-full" asChild>
@@ -124,28 +143,6 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                          </div>
                     </CardContent>
                 </Card>
-
-                {/* Questionnaire Answers Section */}
-                {c.questionnaire_answers && Object.keys(c.questionnaire_answers as object).length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Respuestas del Cuestionario</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 text-sm">
-                            {Object.entries(c.questionnaire_answers as Record<string, string>).map(([key, value]) => {
-                                // Try to find label from template snapshot if possible
-                                const field = (c.template_snapshot as any)?.[key];
-                                const label = field?.label || key;
-                                return (
-                                    <div key={key}>
-                                        <span className="text-muted-foreground block text-xs">{label}</span>
-                                        <span className="font-medium">{value}</span>
-                                    </div>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
-                )}
 
                 <Card>
                     <CardHeader>

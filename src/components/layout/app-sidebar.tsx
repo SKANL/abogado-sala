@@ -64,9 +64,28 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 border-b">
          <h2 className="text-xl font-bold tracking-tight">{organization.name}</h2>
-         <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">{organization.plan_tier}</Badge>
-            {organization.plan_status === 'trialing' && <Badge variant="secondary" className="text-xs">Trial</Badge>}
+         <div className="flex items-center gap-2 mt-1">
+            {organization.plan_status === 'trialing' && organization.plan_tier === 'trial' ? (
+              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-blue-50/50 text-blue-700 border-blue-200">
+                Periodo de Prueba
+              </Badge>
+            ) : (
+              <>
+                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                  {organization.plan_tier}
+                </Badge>
+                {organization.plan_status === 'trialing' && (
+                  <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border-amber-200">
+                    En Prueba
+                  </Badge>
+                )}
+                {organization.plan_status === 'past_due' && (
+                  <Badge variant="destructive" className="text-[10px] font-bold uppercase tracking-wider">
+                    Pago Pendiente
+                  </Badge>
+                )}
+              </>
+            )}
          </div>
       </SidebarHeader>
       
