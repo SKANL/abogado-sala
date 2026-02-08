@@ -1,9 +1,15 @@
 # 0. Guía de Inicio: Requisitos y Configuración Previa
 
-**¡Bienvenido!** 👋
-Esta serie de documentos te guiará paso a paso para configurar un entorno de desarrollo profesional para aplicaciones Full-Stack con Next.js y Supabase.
+> **📚 Contexto:** Esta guía implementa los conceptos de [Entornos de Desarrollo](../../universal/2-environments.md) usando Docker y Supabase.
+> Si quieres entender el "por qué" detrás de cada herramienta, lee primero las [Guías Universales](../../universal/README.md).
 
-El objetivo es que puedas desarrollar en tu PC local sin romper nada en producción, usando herramientas estándar de la industria.
+---
+
+**¡Bienvenido!** 👋
+
+Esta guía te mostrará **cómo configurar** un entorno de desarrollo profesional para aplicaciones Full-Stack con **Next.js/Astro + Supabase + Docker + Vercel**.
+
+**Objetivo:** Desarrollar en tu PC local sin romper nada en producción, usando herramientas estándar de la industria.
 
 ---
 

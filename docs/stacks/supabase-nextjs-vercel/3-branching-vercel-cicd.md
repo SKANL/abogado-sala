@@ -1,5 +1,13 @@
 # 3. Flujo de Trabajo: Git, Ramas y Despliegues
 
+> **📚 Contexto:** Esta guía implementa los conceptos de:
+>
+> - [Control de Versiones](../../universal/1-version-control.md) - Git y estrategias de branching
+> - [CI/CD y Despliegues](../../universal/4-cicd-deployment.md) - Automatización con Vercel
+> - [Migraciones de Base de Datos](../../universal/3-database-migrations.md) - Versionado de cambios de DB
+
+---
+
 Ahora que tienes tu entorno local (Guía 2) y entiendes producción (Guía 1), vamos a ver cómo trabajar día a día sin causar desastres.
 
 ## 🌳 El Árbol (Ramas de Git)

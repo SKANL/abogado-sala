@@ -1,5 +1,10 @@
 # 2. Tu Entorno Local con Docker (El "Taller")
 
+> **📚 Contexto:** Esta guía implementa los conceptos de [Entornos de Desarrollo](../../universal/2-environments.md), específicamente el entorno **Local**.
+> Usaremos **Docker** para lograr [paridad de entornos](../../universal/2-environments.md#-paridad-de-entornos).
+
+---
+
 Aquí es donde ocurre la magia. Vamos a crear una **copia exacta** de Supabase dentro de tu computadora. Puedes romper, borrar y experimentar aquí sin miedo.
 
 ## ¿Por qué Docker?

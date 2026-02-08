@@ -1,5 +1,10 @@
 # 4. Chuleta de Comandos y Solución de Errores
 
+> **📌 Nota:** Esta es una guía de **referencia rápida** específica para el stack Supabase + Docker + Windows.
+> Para entender los conceptos detrás de estos comandos, consulta las [Guías Universales](../../universal/README.md).
+
+---
+
 Guárdate esta página. Aquí están las medicinas para cuando las cosas fallan.
 
 ## ⚡ Comandos que usarás todos los días

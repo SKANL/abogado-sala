@@ -1,11 +1,16 @@
 # 1. Estrategia Supabase Online (Entorno de Producción)
 
+> **📚 Contexto:** Esta guía implementa los conceptos de [Entornos de Desarrollo](../../universal/2-environments.md), específicamente el entorno de **Producción**.
+> Lee también sobre [Migraciones de Base de Datos](../../universal/3-database-migrations.md) para entender por qué no editamos la DB manualmente.
+
+---
+
 ## ¿Qué es el entorno de "Producción"?
 
 Imagina que estás construyendo un edificio.
 
 - **Tu PC (Local):** Es el taller donde pruebas materiales, cortas madera y haces ruido. Si algo se rompe, no pasa nada.
-- **Producción (Supabase Online):** Es el edificio terminado donde vive la gente (tus usuarios reales). **Aquí no se hacen pruebas experimental.**
+- **Producción (Supabase Online):** Es el edificio terminado donde vive la gente (tus usuarios reales). **Aquí no se hacen pruebas experimentales.**
 
 En nuestro proyecto, el "Proyecto Supabase" que creaste en la web (`supabase.com`) es sagrado. Es **Producción**.
 
