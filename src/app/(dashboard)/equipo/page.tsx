@@ -118,26 +118,46 @@ export default async function TeamPage() {
                    <CardTitle>Invitaciones Pendientes</CardTitle>
                    <CardDescription>Usuarios invitados que aún no han aceptado.</CardDescription>
                </CardHeader>
-               <CardContent>
-                   <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Rol Invitado</TableHead>
-                                <TableHead>Enviado</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {invitations.map((inv) => (
-                                <TableRow key={inv.id}>
-                                    <TableCell>{inv.email}</TableCell>
-                                    <TableCell className="capitalize">{inv.role}</TableCell>
-                                    <TableCell>{new Date(inv.created_at).toLocaleDateString()}</TableCell>
+                <CardContent className="p-0">
+                   {/* Desktop View */}
+                   <div className="hidden md:block w-full overflow-auto">
+                       <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Rol Invitado</TableHead>
+                                    <TableHead>Enviado</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                   </Table>
-               </CardContent>
+                            </TableHeader>
+                            <TableBody>
+                                {invitations.map((inv) => (
+                                    <TableRow key={inv.id}>
+                                        <TableCell>{inv.email}</TableCell>
+                                        <TableCell className="capitalize">{inv.role}</TableCell>
+                                        <TableCell>{new Date(inv.created_at).toLocaleDateString()}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                       </Table>
+                   </div>
+                   
+                   {/* Mobile View */}
+                   <div className="md:hidden grid grid-cols-1 gap-2 p-4 bg-muted/20">
+                       {invitations.map((inv) => (
+                           <Card key={inv.id} className="overflow-hidden">
+                               <CardContent className="p-4 flex flex-col gap-2">
+                                   <div className="font-semibold text-sm truncate" title={inv.email}>{inv.email}</div>
+                                   <div className="flex items-center justify-between text-xs mt-1">
+                                       <Badge variant="outline" className="capitalize text-[10px] h-4">
+                                           {inv.role}
+                                       </Badge>
+                                       <span className="text-muted-foreground">{new Date(inv.created_at).toLocaleDateString()}</span>
+                                   </div>
+                               </CardContent>
+                           </Card>
+                       ))}
+                   </div>
+                </CardContent>
            </Card>
        )}
     </div>

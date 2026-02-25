@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Plus, FileJson, Trash2, Edit } from "lucide-react";
+import { Plus, FileJson, Trash2, Edit, FileType2 } from "lucide-react";
 import Link from "next/link";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -96,8 +97,13 @@ export default async function TemplatesPage() {
                 ))}
                 {!templates?.length && (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                            No hay plantillas creadas.
+                        <TableCell colSpan={5} className="h-48 text-center">
+                            <EmptyState 
+                                icon={FileType2} 
+                                title="No hay plantillas" 
+                                description="Crea tu primera plantilla para empezar a tramitar expedientes." 
+                                className="border-none bg-transparent"
+                            />
                         </TableCell>
                     </TableRow>
                 )}
@@ -108,9 +114,12 @@ export default async function TemplatesPage() {
           {/* Mobile View */}
           <div className="md:hidden grid grid-cols-1 gap-0 sm:gap-4 p-4 sm:p-4 bg-muted/20">
               {!templates?.length && (
-                  <div className="p-8 text-center text-sm text-muted-foreground border rounded-lg bg-background">
-                      No hay plantillas creadas.
-                  </div>
+                  <EmptyState 
+                      icon={FileType2} 
+                      title="No hay plantillas" 
+                      description="Crea tu primera plantilla." 
+                      className="bg-background"
+                  />
               )}
               <div className="flex flex-col gap-3">
                   {templates?.map((template) => (

@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, FolderOpen } from "lucide-react";
+import { Plus, FolderOpen, FileStack, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -65,8 +67,13 @@ export default async function CasesPage() {
                     <TableBody>
                         {cases?.length === 0 && (
                              <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                    No hay expedientes registrados.
+                                <TableCell colSpan={5} className="h-48 text-center">
+                                    <EmptyState 
+                                        icon={FileStack} 
+                                        title="No hay expedientes" 
+                                        description="Crea tu primer expediente para empezar a gestionarlo." 
+                                        className="border-none bg-transparent"
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}
@@ -90,9 +97,19 @@ export default async function CasesPage() {
                                     Paso {c.current_step_index}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm" asChild>
-                                        <Link href={`/casos/${c.id}`}>Gestionar</Link>
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" asChild>
+                                                <Link href={`/casos/${c.id}`}>
+                                                    <Settings2 className="h-4 w-4" />
+                                                    <span className="sr-only">Gestionar</span>
+                                                </Link>
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Gestionar Expediente</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -103,9 +120,12 @@ export default async function CasesPage() {
             {/* Mobile View */}
             <div className="md:hidden grid grid-cols-1 gap-0 sm:gap-4 p-4 sm:p-4 bg-muted/20">
                 {cases?.length === 0 && (
-                    <div className="p-8 text-center text-sm text-muted-foreground border rounded-lg bg-background">
-                        No hay expedientes registrados.
-                    </div>
+                    <EmptyState 
+                        icon={FileStack} 
+                        title="No hay expedientes" 
+                        description="Crea tu primer expediente." 
+                        className="bg-background"
+                    />
                 )}
                 <div className="flex flex-col gap-3">
                     {cases?.map((c) => (

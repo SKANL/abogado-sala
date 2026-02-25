@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Plus, User, Search, Users, Mail, Phone, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import {
   Table,
@@ -12,8 +12,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { User } from "lucide-react";
 import { STATUS_LABELS, STATUS_VARIANTS } from "@/lib/constants";
+import { EmptyState } from "@/components/ui/empty-state";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -43,9 +44,7 @@ export default async function ClientsPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Teléfono</TableHead>
+                            <TableHead>Nombre del Cliente</TableHead>
                             <TableHead>Estado</TableHead>
                              <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
@@ -53,29 +52,60 @@ export default async function ClientsPage() {
                     <TableBody>
                         {clients?.length === 0 && (
                              <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                    No hay clientes registrados.
+                                <TableCell colSpan={5} className="h-48 text-center">
+                                    <EmptyState 
+                                        icon={Users} 
+                                        title="No hay clientes" 
+                                        description="Aún no has registrado ningún cliente en el despacho." 
+                                        className="border-none bg-transparent"
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}
                         {clients?.map((client) => (
                             <TableRow key={client.id}>
-                                <TableCell className="font-medium">
-                                    <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4 text-muted-foreground" />
-                                        {client.full_name}
-                                    </div>
+                                <TableCell>
+                                    <HoverCard>
+                                        <HoverCardTrigger asChild>
+                                            <Button variant="link" className="p-0 h-auto font-medium justify-start text-foreground">
+                                                <div className="flex items-center gap-2">
+                                                    <User className="h-4 w-4 text-muted-foreground" />
+                                                    {client.full_name}
+                                                </div>
+                                            </Button>
+                                        </HoverCardTrigger>
+                                        <HoverCardContent className="w-80" side="right">
+                                            <div className="flex justify-between space-x-4">
+                                                <div className="space-y-1">
+                                                    <h4 className="text-sm font-semibold">{client.full_name}</h4>
+                                                    <div className="flex items-center pt-2">
+                                                        <Mail className="mr-2 h-4 w-4 opacity-70" />{" "}
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {client.email || "Sin email registrado"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center pt-2">
+                                                        <Phone className="mr-2 h-4 w-4 opacity-70" />{" "}
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {client.phone || "Sin teléfono registrado"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </HoverCardContent>
+                                    </HoverCard>
                                 </TableCell>
-                                <TableCell>{client.email || "-"}</TableCell>
-                                <TableCell>{client.phone || "-"}</TableCell>
                                 <TableCell>
                                     <Badge variant={STATUS_VARIANTS[client.status] || "default"}>
                                         {STATUS_LABELS[client.status] || client.status}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm" asChild>
-                                        <Link href={`/clientes/${client.id}`}>Ver</Link>
+                                    <Button variant="ghost" size="icon" asChild>
+                                        <Link href={`/clientes/${client.id}`}>
+                                            <ExternalLink className="h-4 w-4" />
+                                            <span className="sr-only">Ver Perfil</span>
+                                        </Link>
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -87,9 +117,12 @@ export default async function ClientsPage() {
             {/* Mobile View */}
             <div className="md:hidden grid grid-cols-1 gap-0 sm:gap-4 p-4 sm:p-4 bg-muted/20">
                 {clients?.length === 0 && (
-                    <div className="p-8 text-center text-sm text-muted-foreground border rounded-lg bg-background">
-                        No hay clientes registrados.
-                    </div>
+                    <EmptyState 
+                        icon={Users} 
+                        title="No hay clientes" 
+                        description="Aún no has registrado clientes." 
+                        className="bg-background"
+                    />
                 )}
                 <div className="flex flex-col gap-3">
                     {clients?.map((client) => (

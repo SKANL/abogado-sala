@@ -84,11 +84,11 @@ export function DocumentUploadSlot({ caseId, fileId, category, description, stat
 
   return (
     <div className="border border-dashed p-4 rounded-md space-y-3 bg-muted/20 hover:bg-muted/40 transition-colors">
-        <div className="flex items-center justify-between">
-             <div className="flex items-center gap-2">
-                <Paperclip className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{description || category}</span>
-             </div>
+         <div className="flex items-center justify-between gap-2 overflow-hidden">
+              <div className="flex items-center gap-2 min-w-0">
+                 <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                 <span className="text-sm font-medium truncate" title={description || category}>{description || category}</span>
+              </div>
              {status === 'missing' && <span className="text-xs text-red-500 font-medium">Requerido</span>}
              {status === 'rejected' && <span className="text-xs text-red-500 font-medium">Rechazado - Subir nuevo</span>}
         </div>

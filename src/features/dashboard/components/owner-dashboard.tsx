@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { LiveActivityFeed } from "./widgets/live-activity-feed";
 import { CompactTeamList, TeamMemberStat } from "./widgets/compact-team-list";
 import { CaseDistributionWidget } from "./widgets/case-distribution-widget";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OwnerDashboardProps {
     orgId: string;
@@ -78,9 +80,9 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
     const totalCases = allCases?.length || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* 1. Top Level KPIs - The "Pulse" */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
         <KpiCard 
             title="Clientes Totales" 
             value={clientCount || 0} 
@@ -111,8 +113,10 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
         />
       </div>
 
-      {/* 2. Analytical Layer - 70/30 Split */}
-      <div className="grid gap-6 lg:grid-cols-12 min-h-[500px]">
+      {/* 2. Analytical Layer - Responsive Handling */}
+      
+      {/* Desktop View: 70/30 Split Grid (lg and up) */}
+      <div className="hidden lg:grid gap-6 lg:grid-cols-12 min-h-[500px]">
         {/* Left Column (Main Board) - 8 cols (66%) */}
         <div className="lg:col-span-8 space-y-6">
              <CompactTeamList members={teamMembers} />
@@ -124,9 +128,34 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
                 <CaseDistributionWidget data={distData} total={totalCases} />
             </div>
             <div className="flex-1 bg-muted/10 rounded-xl p-4 border border-border/50">
-                 <LiveActivityFeed initialLogs={auditLogs || []} orgId={orgId} actorsMap={actorsMap} />
+                <ScrollArea className="h-[400px] w-full pr-3">
+                     <LiveActivityFeed initialLogs={auditLogs || []} orgId={orgId} actorsMap={actorsMap} />
+                </ScrollArea>
             </div>
         </div>
+      </div>
+
+      {/* Mobile/Tablet View: Quick Tabbing (below lg) */}
+      <div className="lg:hidden">
+         <Tabs defaultValue="actividad" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="actividad">Métricas & Actividad</TabsTrigger>
+                <TabsTrigger value="equipo">Equipo</TabsTrigger>
+            </TabsList>
+            <TabsContent value="actividad" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
+                <div className="h-[300px]">
+                    <CaseDistributionWidget data={distData} total={totalCases} />
+                </div>
+                <div className="bg-muted/10 rounded-xl p-4 border border-border/50">
+                    <ScrollArea className="h-[400px] w-full pr-3">
+                        <LiveActivityFeed initialLogs={auditLogs || []} orgId={orgId} actorsMap={actorsMap} />
+                    </ScrollArea>
+                </div>
+            </TabsContent>
+            <TabsContent value="equipo" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
+                <CompactTeamList members={teamMembers} />
+            </TabsContent>
+         </Tabs>
       </div>
     </div>
   );
@@ -134,14 +163,14 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
 
 function KpiCard({ title, value, icon: Icon, trend, trendColor }: any) {
     return (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 pb-2 md:pb-2">
+            <CardTitle className="text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-tight md:tracking-wider line-clamp-1 truncate">{title}</CardTitle>
+            <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0 ml-1" />
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold tracking-tight">{value}</div>
-            <p className={`text-xs font-medium mt-1 ${trendColor}`}>
+          <CardContent className="p-3 md:p-6 pt-0 flex-1 flex flex-col justify-end">
+            <div className="text-2xl md:text-3xl font-bold tracking-tight">{value}</div>
+            <p className={`text-[10px] md:text-xs font-medium mt-1 leading-tight ${trendColor}`}>
                 {trend}
             </p>
           </CardContent>
