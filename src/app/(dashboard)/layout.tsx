@@ -1,7 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { OrgFetcherWrapper } from "@/components/layout/dashboard-wrapper/org-fetcher";
-import { NotificationsPopover } from "@/features/notifications/components/notifications-popover";
+import { NotificationsSheet } from "@/features/notifications/components/notifications-sheet";
 import { DynamicBreadcrumb } from "@/components/layout/dynamic-breadcrumb";
 
 export default function DashboardLayout({
@@ -20,7 +20,7 @@ export default function DashboardLayout({
                     <DynamicBreadcrumb />
                 </div>
                 <div className="flex items-center gap-4">
-                    <NotificationsPopover />
+                    <NotificationsSheet />
                 </div>
             </div>
             <div className="p-4 md:p-6 lg:p-8">

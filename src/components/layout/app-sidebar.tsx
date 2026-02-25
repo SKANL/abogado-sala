@@ -53,7 +53,6 @@ const items = [
 
 import { useOrganization } from "@/components/providers/organization-provider";
 import { Badge } from "@/components/ui/badge";
-import { NotificationsSheet } from "@/features/notifications/components/notifications-sheet";
 
 export function AppSidebar() {
   const { user } = useAuth();
@@ -64,11 +63,8 @@ export function AppSidebar() {
   return (
     <Sidebar variant="floating">
       <SidebarHeader className="p-4 border-b">
-         <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold tracking-tight truncate pr-2">{organization.name}</h2>
-            <NotificationsSheet />
-         </div>
-         <div className="flex items-center gap-2 mt-2">
+         <h2 className="text-xl font-bold tracking-tight">{organization.name}</h2>
+         <div className="flex items-center gap-2 mt-1">
             {organization.plan_status === 'trialing' && organization.plan_tier === 'trial' ? (
               <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-blue-50/50 text-blue-700 border-blue-200">
                 Periodo de Prueba
