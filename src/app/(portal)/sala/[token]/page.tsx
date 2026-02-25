@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { PortalWizard } from "@/features/portal/components/portal-wizard";
 // Removed unused imports
 
@@ -14,7 +14,8 @@ export default async function RoomPage({ params }: { params: { token: string } }
 
   if (error || !resultData) {
       console.error("Portal Error:", error);
-      notFound();
+      const isExpired = error?.message?.toLowerCase().includes('expir');
+      redirect(`/portal-error${isExpired ? '?reason=expired' : ''}`);
   }
 
   // Safe cast

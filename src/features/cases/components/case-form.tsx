@@ -147,6 +147,7 @@ export function CaseForm({ clients, templates }: CaseFormProps) {
                 name="template_snapshot" 
                 value={JSON.stringify(selectedTemplate?.schema || {})} 
             />
+            <input type="hidden" name="template_id" value={selectedTemplateId || ""} />
             
             <div className="space-y-2">
                  <Label htmlFor="status">Estado Inicial</Label>

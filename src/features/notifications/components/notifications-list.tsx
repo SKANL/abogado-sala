@@ -9,7 +9,11 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
-export function NotificationsList() {
+interface NotificationsListProps {
+    isSheet?: boolean;
+}
+
+export function NotificationsList({ isSheet }: NotificationsListProps) {
     const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
     const router = useRouter();
 
@@ -29,27 +33,43 @@ export function NotificationsList() {
     }
 
     return (
-        <div className="w-80">
-            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50">
-                <h4 className="font-semibold text-sm">Notificaciones</h4>
-                {notifications.some(n => !n.read) && (
-                    <Button 
+        <div className={cn("relative flex flex-col", isSheet ? "w-full h-full" : "w-80")}>
+            {/* Header omitted if isSheet because SheetHeader handles it, or keep for actions */}
+            {!isSheet && (
+                <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50">
+                    <h4 className="font-semibold text-sm">Notificaciones</h4>
+                    {notifications.some(n => !n.read) && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => markAllAsRead()}
+                            title="Marcar todas como leídas"
+                        >
+                            <CheckCheck className="h-3 w-3" />
+                        </Button>
+                    )}
+                </div>
+            )}
+            {isSheet && notifications.some(n => !n.read) && (
+                <div className="flex justify-end px-4 py-2 bg-muted/10 border-b">
+                     <Button 
                         variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
+                        size="sm" 
+                        className="text-xs h-7" 
                         onClick={() => markAllAsRead()}
-                        title="Marcar todas como leídas"
                     >
-                        <CheckCheck className="h-3 w-3" />
+                        <CheckCheck className="h-3 w-3 mr-2" /> Marcar todas como leídas
                     </Button>
-                )}
-            </div>
+                </div>
+            )}
+
             {notifications.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground text-sm">
+                <div className="p-8 text-center text-muted-foreground text-sm flex-1 flex flex-col items-center justify-center">
                     No tienes notificaciones.
                 </div>
             ) : (
-                <ScrollArea className="h-[300px]">
+                <ScrollArea className={cn(isSheet ? "flex-1 h-full" : "h-[300px]")}>
                     <div className="grid">
                         {notifications.map((n) => (
                             <div 

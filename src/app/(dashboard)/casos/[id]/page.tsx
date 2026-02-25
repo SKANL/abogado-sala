@@ -11,6 +11,7 @@ import { CaseActionsDropdown } from "@/features/cases/components/case-actions-me
 import { CaseFilesList } from "@/features/cases/components/case-files-list";
 
 import { CaseRealtimeListener } from "@/features/cases/components/case-realtime-listener";
+import { CaseStatusSelector } from "@/features/cases/components/case-status-selector";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -41,9 +42,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             <div className="space-y-1">
                 <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold tracking-tight">Expediente {c.client?.full_name}</h1>
-                    <Badge variant={c.status === 'in_progress' ? 'default' : 'outline'}>
-                        {c.status}
-                    </Badge>
+                    <CaseStatusSelector caseId={c.id} currentStatus={c.status} />
                 </div>
                 <p className="text-muted-foreground font-mono text-sm">
                     ID: {c.id}
@@ -66,10 +65,10 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             {/* Left Column: Details & Client */}
             <div className="space-y-6 md:col-span-2">
                  
-                 <Tabs defaultValue="documents" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-                        <TabsTrigger value="documents">Documentación</TabsTrigger>
-                        <TabsTrigger value="questionnaire">Cuestionario</TabsTrigger>
+                <Tabs defaultValue="documents" className="w-full">
+                    <TabsList className="flex w-full overflow-x-auto scrollbar-hide shrink-0 lg:w-[400px] justify-start p-1 h-auto">
+                        <TabsTrigger value="documents" className="flex-1 whitespace-nowrap">Documentación</TabsTrigger>
+                        <TabsTrigger value="questionnaire" className="flex-1 whitespace-nowrap">Cuestionario</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="documents" className="mt-4">

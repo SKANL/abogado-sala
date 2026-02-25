@@ -11,7 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-// Note: We need to install table component. I will assume it's like standard shadcn.
+import { Badge } from "@/components/ui/badge";
+import { User } from "lucide-react";
+import { STATUS_LABELS, STATUS_VARIANTS } from "@/lib/constants";
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -36,49 +38,87 @@ export default async function ClientsPage() {
 
      <Card>
         <CardContent className="p-0">
-             {/* Simple Table (Manual/Shadcn style) */}
-             <div className="relative w-full overflow-auto">
-                <table className="w-full caption-bottom text-sm">
-                    <thead className="[&_tr]:border-b">
-                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nombre</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Email</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Teléfono</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Estado</th>
-                             <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="[&_tr:last-child]:border-0">
+             {/* Desktop View */}
+             <div className="hidden md:block relative w-full overflow-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Teléfono</TableHead>
+                            <TableHead>Estado</TableHead>
+                             <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {clients?.length === 0 && (
-                             <tr>
-                                <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                             <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                     No hay clientes registrados.
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         )}
                         {clients?.map((client) => (
-                            <tr key={client.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                <td className="p-4 align-middle font-medium">{client.full_name}</td>
-                                <td className="p-4 align-middle">{client.email || "-"}</td>
-                                <td className="p-4 align-middle">{client.phone || "-"}</td>
-                                <td className="p-4 align-middle">
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                        client.status === 'active' ? 'bg-green-100 text-green-800' :
-                                        client.status === 'prospect' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-800'
-                                    }`}>
-                                        {client.status}
-                                    </span>
-                                </td>
-                                <td className="p-4 align-middle">
+                            <TableRow key={client.id}>
+                                <TableCell className="font-medium">
+                                    <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4 text-muted-foreground" />
+                                        {client.full_name}
+                                    </div>
+                                </TableCell>
+                                <TableCell>{client.email || "-"}</TableCell>
+                                <TableCell>{client.phone || "-"}</TableCell>
+                                <TableCell>
+                                    <Badge variant={STATUS_VARIANTS[client.status] || "default"}>
+                                        {STATUS_LABELS[client.status] || client.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
                                     <Button variant="ghost" size="sm" asChild>
                                         <Link href={`/clientes/${client.id}`}>Ver</Link>
                                     </Button>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ))}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="md:hidden grid grid-cols-1 gap-0 sm:gap-4 p-4 sm:p-4 bg-muted/20">
+                {clients?.length === 0 && (
+                    <div className="p-8 text-center text-sm text-muted-foreground border rounded-lg bg-background">
+                        No hay clientes registrados.
+                    </div>
+                )}
+                <div className="flex flex-col gap-3">
+                    {clients?.map((client) => (
+                        <Card key={client.id} className="overflow-hidden">
+                            <CardContent className="p-4 space-y-3">
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-1">
+                                        <div className="font-semibold flex items-center gap-2">
+                                            <User className="h-4 w-4 text-primary" />
+                                            {client.full_name}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground flex flex-col gap-1 mt-1">
+                                            {client.email && <span>{client.email}</span>}
+                                            {client.phone && <span>{client.phone}</span>}
+                                        </div>
+                                    </div>
+                                    <Badge variant={STATUS_VARIANTS[client.status] || "default"}>
+                                        {STATUS_LABELS[client.status] || client.status}
+                                    </Badge>
+                                </div>
+                                <div className="flex justify-end pt-2">
+                                    <Button variant="secondary" size="sm" className="h-8 text-xs font-semibold w-full sm:w-auto" asChild>
+                                        <Link href={`/clientes/${client.id}`}>Ver Perfil</Link>
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             </div>
         </CardContent>
      </Card>

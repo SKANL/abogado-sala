@@ -21,7 +21,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteCaseAction, updateCaseAction, finalizeCaseAction, requestZipExportAction } from "../actions";
+import { deleteCaseAction, updateCaseAction, finalizeCaseAction } from "../actions";
+import { ExportCasePanel } from "./export-case-panel";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -32,6 +33,7 @@ interface CaseActionsProps {
 
 export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps) {
     const [openDeleteAlert, setOpenDeleteAlert] = useState(false);
+    const [exportPanelOpen, setExportPanelOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
@@ -92,24 +94,6 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
         }
     };
 
-    const handleExportZip = async () => {
-        setLoading(true);
-        try {
-            const result = await requestZipExportAction(caseId);
-            if (result.success) {
-                toast.success("Solicitud enviada", {
-                    description: "Se te notificará cuando el archivo esté listo."
-                });
-            } else {
-                toast.error(result.error);
-            }
-        } catch (error) {
-            toast.error("Error al solicitar exportación");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     return (
         <>
             <DropdownMenu>
@@ -134,7 +118,7 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
                                     <FileArchive className="mr-2 h-4 w-4" /> Finalizar y Descargar
                                 </DropdownMenuItem>
                             ) : (
-                                <DropdownMenuItem onClick={handleExportZip}>
+                                <DropdownMenuItem onClick={() => setExportPanelOpen(true)}>
                                     <FileArchive className="mr-2 h-4 w-4" /> Exportar ZIP
                                 </DropdownMenuItem>
                             )}
@@ -175,6 +159,12 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            
+            <ExportCasePanel 
+                caseId={caseId} 
+                open={exportPanelOpen} 
+                onOpenChange={setExportPanelOpen} 
+            />
         </>
     );
 }

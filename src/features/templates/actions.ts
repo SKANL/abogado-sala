@@ -108,6 +108,21 @@ export async function deleteTemplateAction(templateId: string): Promise<Result<v
     if (!templateId) return { success: false, error: "ID requerido" };
 
     const supabase = await createClient();
+
+    // Check for active cases using this template
+    const { count } = await supabase
+        .from("cases")
+        .select("id", { count: "exact", head: true })
+        .eq("template_id", templateId)
+        .not("status", "eq", "archived");
+
+    if ((count ?? 0) > 0) {
+        return {
+            success: false,
+            error: `Esta plantilla tiene ${count} expediente(s) activo(s) y no puede eliminarse.`,
+        };
+    }
+
     const { error } = await supabase.from("templates").delete().eq("id", templateId);
 
     if (error) {
@@ -116,4 +131,54 @@ export async function deleteTemplateAction(templateId: string): Promise<Result<v
 
     revalidatePath("/plantillas");
     return { success: true, data: undefined };
+}
+
+export async function syncTemplateToCasesAction(templateId: string): Promise<Result<{ updatedCount: number }>> {
+    if (!templateId) return { success: false, error: "ID de plantilla requerido" };
+
+    const supabase = await createClient();
+
+    // 1. Fetch the template
+    const { data: template, error: templateError } = await supabase
+        .from("templates")
+        .select("schema")
+        .eq("id", templateId)
+        .single();
+
+    if (templateError || !template) {
+        return { success: false, error: "Plantilla no encontrada" };
+    }
+
+    // 2. Fetch active cases using this template
+    const { data: activeCases, error: casesError } = await supabase
+        .from("cases")
+        .select("id")
+        .eq("template_id", templateId)
+        .not("status", "eq", "completed")
+        .not("status", "eq", "archived");
+
+    if (casesError) {
+        return handleError(casesError);
+    }
+
+    if (!activeCases || activeCases.length === 0) {
+        return { success: true, data: { updatedCount: 0 } };
+    }
+
+    // 3. Update all these cases with the new template_snapshot
+    const caseIds = activeCases.map(c => c.id);
+    
+    // Explicit type casting
+    const updatePayload: any = { template_snapshot: template.schema };
+
+    const { error: updateError } = await supabase
+        .from("cases")
+        .update(updatePayload)
+        .in("id", caseIds);
+
+    if (updateError) {
+        return handleError(updateError);
+    }
+
+    return { success: true, data: { updatedCount: caseIds.length } };
 }

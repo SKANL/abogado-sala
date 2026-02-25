@@ -46,6 +46,7 @@ export const updateOrganizationSchema = z.object({
 export const createCaseSchema = z.object({
   client_id: z.string().uuid({ message: "Cliente requerido" }),
   template_snapshot: z.record(z.string(), z.any()).optional(), // JSONB. WARNING: Must validate against FileCategoryEnum
+  template_id: z.string().uuid().optional().nullable(),
   status: z.enum(["draft", "in_progress"]).default("draft"),
 });
 

@@ -69,6 +69,7 @@ export async function createCaseAction(
       token,
       current_step_index: 0,
       template_snapshot: parse.data.template_snapshot as any,
+      template_id: parse.data.template_id || null,
     })
     .select()
     .single();
@@ -301,13 +302,15 @@ export async function finalizeCaseAction(caseId: string): Promise<Result<any>> {
     if (updateError) return handleError(updateError);
 
     // 2. Create Zip Job
+    let jobId: string | undefined;
     try {
-        await createJob(supabase, {
+        const job = await createJob(supabase, {
             orgId: user.app_metadata.org_id,
             requesterId: user.id, 
             type: 'zip_export',
             metadata: { case_id: caseId }
         });
+        jobId = job.id;
     } catch (e) {
         console.error("Failed to create zip job", e);
     }
@@ -322,10 +325,10 @@ export async function finalizeCaseAction(caseId: string): Promise<Result<any>> {
     });
 
     revalidatePath("/casos");
-    return { success: true, data: { message: "Procesando descarga..." } };
+    return { success: true, data: { message: "Procesando descarga...", job_id: jobId } };
 }
 
-export async function requestZipExportAction(caseId: string): Promise<Result<void>> {
+export async function requestZipExportAction(caseId: string): Promise<Result<{ job_id: string }>> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -334,7 +337,7 @@ export async function requestZipExportAction(caseId: string): Promise<Result<voi
     }
 
     try {
-        await createJob(supabase, {
+        const job = await createJob(supabase, {
             orgId: user.app_metadata.org_id,
             requesterId: user.id, 
             type: 'zip_export',
@@ -348,7 +351,7 @@ export async function requestZipExportAction(caseId: string): Promise<Result<voi
             orgId: user.app_metadata.org_id
         });
 
-        return { success: true, data: undefined };
+        return { success: true, data: { job_id: job.id } };
     } catch (e: any) {
         console.error("Failed to create zip job", e);
         return { success: false, error: e.message || "Error al solicitar exportación" };

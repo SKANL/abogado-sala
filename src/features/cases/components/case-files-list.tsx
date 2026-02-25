@@ -85,9 +85,9 @@ export function CaseFilesList({ files }: CaseFilesListProps) {
               <div className="h-9 w-9 bg-primary/10 text-primary rounded-md flex items-center justify-center">
                 <FileText className="h-5 w-5" />
               </div>
-              <div>
-                <p className="font-medium text-foreground">{file.description || file.category || "Sin título"}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-foreground truncate">{file.description || file.category || "Sin título"}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span>{(file.file_size / 1024).toFixed(1)} KB</span>
                     <span>•</span>
                     <span className="capitalize">{file.status.replace('_', ' ')}</span>

@@ -2,8 +2,73 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, Briefcase, FileText, Activity } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+      </div>
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent />
+      </Suspense>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 md:space-y-8">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4 rounded-full" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
+              <Skeleton className="h-8 w-16 mb-1" />
+              <Skeleton className="h-3 w-32" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+         <Card className="col-span-full lg:col-span-4">
+            <CardHeader className="p-4 md:p-6">
+               <Skeleton className="h-6 w-40 mb-2" />
+               <Skeleton className="h-4 w-60" />
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 pt-0 space-y-6">
+               {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-40" />
+                      </div>
+                      <Skeleton className="h-4 w-20" />
+                  </div>
+               ))}
+            </CardContent>
+         </Card>
+         <Card className="col-span-full lg:col-span-3">
+             <CardHeader className="p-4 md:p-6">
+                <Skeleton className="h-6 w-40 mb-2" />
+                <Skeleton className="h-4 w-60" />
+             </CardHeader>
+             <CardContent className="p-4 md:p-6 pt-0">
+                <Skeleton className="h-24 w-full rounded-md" />
+             </CardContent>
+         </Card>
+      </div>
+    </div>
+  );
+}
+
+async function DashboardContent() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -30,17 +95,10 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <div className="flex items-center space-x-2">
-           {/* DateRangePicker or similar could go here */}
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6">
             <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -90,8 +148,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
+        <Card className="col-span-full lg:col-span-4">
+          <CardHeader className="p-4 md:p-6">
             <CardTitle>Actividad Reciente</CardTitle>
              <CardDescription>
               Últimos expedientes creados o modificados.
@@ -122,13 +180,13 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
         <Card className="col-span-3">
-          <CardHeader>
+          <CardHeader className="p-4 md:p-6">
             <CardTitle>Accesos Rápidos</CardTitle>
              <CardDescription>
               Tareas comunes del día a día.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6 pt-0">
              {/* Placeholder for quick actions or notifications */}
              <div className="flex flex-col gap-2">
                  <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground text-center">
@@ -138,6 +196,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

@@ -40,51 +40,75 @@ export default async function TeamPage() {
         <CardHeader>
             <CardTitle>Miembros Activos</CardTitle>
         </CardHeader>
-        <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Usuario</TableHead>
-                        <TableHead>Rol</TableHead>
-                        <TableHead>Estado</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {members?.map((member) => (
-                        <TableRow key={member.id}>
-                            <TableCell className="flex items-center gap-3">
+        <CardContent className="p-0">
+            {/* Desktop View */}
+            <div className="hidden md:block relative w-full overflow-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Usuario</TableHead>
+                            <TableHead>Rol</TableHead>
+                            <TableHead>Estado</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {members?.map((member) => (
+                            <TableRow key={member.id}>
+                                <TableCell className="flex items-center gap-3">
+                                    <Avatar>
+                                        <AvatarImage src={member.avatar_url || ""} />
+                                        <AvatarFallback>{member.full_name?.substring(0,2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <div className="font-medium">{member.full_name}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                             {member.id === user?.id ? "(Tú)" : ""}
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className="capitalize">
+                                        {member.role === 'admin' ? 'Administrador' : 'Miembro'}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={member.status === 'active' ? 'default' : 'destructive'} className="capitalize">
+                                        {member.status}
+                                    </Badge>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="md:hidden grid grid-cols-1 gap-2 p-4 bg-muted/20">
+                {members?.map((member) => (
+                    <Card key={member.id} className="overflow-hidden">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
                                 <Avatar>
                                     <AvatarImage src={member.avatar_url || ""} />
                                     <AvatarFallback>{member.full_name?.substring(0,2).toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <div className="font-medium">{member.full_name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {/* We don't have email in profiles by default schema design unless synced? 
-                                            Schema says linked 1:1 with auth.users. 
-                                            Profiles table has: full_name, avatar_url, assigned_phone.
-                                            We usually don't duplicate email to profiles to avoid sync issues.
-                                            But we can't get it easily without a joined view or Auth Admin API.
-                                            For now, show name.
-                                         */}
-                                         {member.id === user?.id ? "(Tú)" : ""}
+                                    <div className="font-semibold">{member.full_name}</div>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                                        <Badge variant="outline" className="capitalize text-[10px] h-4">
+                                            {member.role === 'admin' ? 'Admin' : 'Miembro'}
+                                        </Badge>
+                                        {member.id === user?.id && <span>(Tú)</span>}
                                     </div>
                                 </div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className="capitalize">
-                                    {member.role === 'admin' ? 'Administrador' : 'Miembro'}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant={member.status === 'active' ? 'default' : 'destructive'} className="capitalize">
-                                    {member.status}
-                                </Badge>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                            </div>
+                            <Badge variant={member.status === 'active' ? 'default' : 'destructive'} className="capitalize h-6 text-xs">
+                                {member.status}
+                            </Badge>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
         </CardContent>
        </Card>
 

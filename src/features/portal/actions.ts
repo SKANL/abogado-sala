@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server-admin";
+import { createNotification } from "@/lib/services/notification-service";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
 import { Result } from "@/types";
 import { revalidatePath } from "next/cache";
@@ -90,6 +92,38 @@ export async function advanceStepAction(
       return handleError(error);
   }
 
+  // Trigger Notifications using Admin Client
+  try {
+      const adminClient = createAdminClient();
+      const { data: caseRef } = await adminClient
+        .from('cases')
+        .select(`
+          id, org_id, token,
+          clients ( full_name, assigned_lawyer_id )
+        `)
+        .eq('token', token)
+        .single();
+        
+      if (caseRef && caseRef.clients && (caseRef.clients as any).assigned_lawyer_id) {
+          const clientData = caseRef.clients as any;
+          const clientName = clientData.full_name || 'Un cliente';
+          const lawyerId = clientData.assigned_lawyer_id;
+          
+          if (newStepIndex === 1) {
+              await createNotification(adminClient, {
+                  userId: lawyerId,
+                  orgId: caseRef.org_id,
+                  title: "Ingreso al Portal",
+                  message: `${clientName} ha ingresado al portal del caso.`,
+                  type: 'info',
+                  metadata: { case_id: caseRef.id, link: `/casos/${caseRef.id}` }
+              });
+          }
+      }
+  } catch (err) {
+      console.error("Failed to send notification for advanceStep:", err);
+  }
+
   revalidatePath(`/sala/${token}`);
   return { success: true, data: undefined };
 }
@@ -111,6 +145,36 @@ export async function submitQuestionnaireAction(
 
   if (error) {
     return handleError(error);
+  }
+
+  // Trigger Notification
+  try {
+      const adminClient = createAdminClient();
+      const { data: caseRef } = await adminClient
+        .from('cases')
+        .select(`
+          id, org_id, token,
+          clients ( full_name, assigned_lawyer_id )
+        `)
+        .eq('token', token)
+        .single();
+        
+      if (caseRef && caseRef.clients && (caseRef.clients as any).assigned_lawyer_id) {
+          const clientData = caseRef.clients as any;
+          const clientName = clientData.full_name || 'Un cliente';
+          const lawyerId = clientData.assigned_lawyer_id;
+          
+          await createNotification(adminClient, {
+              userId: lawyerId,
+              orgId: caseRef.org_id,
+              title: "Cuestionario Completado",
+              message: `${clientName} ha completado el cuestionario del caso.`,
+              type: 'success',
+              metadata: { case_id: caseRef.id, link: `/casos/${caseRef.id}?tab=info` }
+          });
+      }
+  } catch (err) {
+      console.error("Failed to send notification for questionnaire:", err);
   }
 
   revalidatePath(`/sala/${token}`);
@@ -135,6 +199,36 @@ export async function confirmPortalUploadAction(
     if (error) {
         // console.error("Error confirming portal upload:", error);
         return handleError(error);
+    }
+
+    // Trigger Notification
+    try {
+        const adminClient = createAdminClient();
+        const { data: caseRef } = await adminClient
+          .from('cases')
+          .select(`
+            id, org_id, token,
+            clients ( full_name, assigned_lawyer_id )
+          `)
+          .eq('token', token)
+          .single();
+          
+        if (caseRef && caseRef.clients && (caseRef.clients as any).assigned_lawyer_id) {
+            const clientData = caseRef.clients as any;
+            const clientName = clientData.full_name || 'Un cliente';
+            const lawyerId = clientData.assigned_lawyer_id;
+            
+            await createNotification(adminClient, {
+                userId: lawyerId,
+                orgId: caseRef.org_id,
+                title: "Nuevo Documento",
+                message: `${clientName} ha cargado un documento en el caso.`,
+                type: 'info',
+                metadata: { case_id: caseRef.id, link: `/casos/${caseRef.id}?tab=docs` }
+            });
+        }
+    } catch (err) {
+        console.error("Failed to send notification for upload:", err);
     }
 
     revalidatePath(`/sala/${token}`);

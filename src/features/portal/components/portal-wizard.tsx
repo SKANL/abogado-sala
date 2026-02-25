@@ -57,7 +57,8 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
     }
   };
 
-  const areAllFilesUploaded = files.length > 0 && files.every((f: any) => f.status === 'uploaded' || f.status === 'exception');
+  const hasFileRequirements = files.length > 0;
+  const areAllFilesUploaded = hasFileRequirements && files.every((f: any) => f.status === 'uploaded' || f.status === 'exception');
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -94,7 +95,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
                 templateSnapshot={initialCaseData.template_snapshot}
                 currentAnswers={initialCaseData.questionnaire_answers}
                 token={token}
-                onNext={() => handleStepComplete(3)}
+                onNext={() => handleStepComplete(hasFileRequirements ? 3 : 4)}
             />
         )}
 
@@ -129,7 +130,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
              <div className="flex justify-end pt-6">
                 <Button 
                     onClick={() => handleStepComplete(4)}
-                    disabled={!areAllFilesUploaded}
+                    disabled={hasFileRequirements && !areAllFilesUploaded}
                     size="lg"
                 >
                     Finalizar y Enviar

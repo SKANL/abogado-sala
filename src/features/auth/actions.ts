@@ -99,17 +99,17 @@ export async function signupWithOrgAction(
     }
 
     // 3. Link Org to Profile & Make Admin
+    // The Postgres Trigger `handle_new_user` has already created the profile row.
+    // Changing from `upsert` to `update` prevents race condition errors on the primary key constraint.
     const { error: profileError } = await admin
       .from("profiles")
-      .upsert({
-        id: userId,
+      .update({
         org_id: org.id,
         role: "admin",
         status: "active",
         full_name: full_name,
-        // We can optionally add avatar if available from oauth, 
-        // but for email signup usually null.
       })
+      .eq("id", userId)
       .select()
       .single();
 
