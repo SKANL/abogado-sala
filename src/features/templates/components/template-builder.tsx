@@ -157,9 +157,9 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <div className="space-y-6">
-        <Card>
+    <div className="grid gap-4 md:grid-cols-2 h-full">
+      <div className="flex flex-col gap-4 min-h-0">
+        <Card className="shrink-0">
             <CardHeader>
                 <CardTitle>Configuración General</CardTitle>
             </CardHeader>
@@ -183,12 +183,12 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
             </CardContent>
         </Card>
 
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="flex flex-col flex-1 min-h-0">
+            <CardHeader className="flex flex-row items-center justify-between shrink-0">
                 <CardTitle>Campos del Formulario</CardTitle>
                 <Button onClick={addField} size="sm" variant="outline">Agregar Campo</Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 min-h-0 overflow-y-auto">
                 <DndContext 
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -272,13 +272,13 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
         </Card>
       </div>
 
-      <div className="space-y-6">
-         <Card className="sticky top-6">
-            <CardHeader>
+      <div className="flex flex-col min-h-0">
+         <Card className="flex flex-col flex-1 min-h-0">
+            <CardHeader className="shrink-0">
                 <CardTitle>Vista Previa</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="border p-4 rounded-md bg-muted/20">
+            <CardContent className="flex flex-col flex-1 min-h-0 gap-4 pt-0">
+                <div className="flex-1 min-h-0 overflow-y-auto border rounded-md bg-muted/20 p-4">
                     <h3 className="text-lg font-bold mb-4">{title}</h3>
                     <div className="space-y-4">
                         {fields.map(field => {
@@ -336,7 +336,7 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
                         {fields.length === 0 && <p className="text-sm text-muted-foreground">La vista previa aparecerá aquí.</p>}
                     </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 shrink-0">
                     <Button className="w-full" onClick={handleSave} disabled={isSaving || isSyncing}>
                         {isSaving ? "Guardando..." : "Guardar Plantilla"}
                     </Button>

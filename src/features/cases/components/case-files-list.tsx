@@ -11,6 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import { getSignedFileUrlAction } from "@/features/cases/actions";
 import { toast } from "sonner";
+import { STATUS_LABELS } from "@/lib/constants";
+
+const FILE_STATUS_LABELS: Record<string, string> = {
+  ...STATUS_LABELS,
+  uploaded: "Subido",
+  uploading: "Subiendo",
+  failed: "Error",
+};
 
 interface CaseFile {
   id: string;
@@ -90,7 +98,7 @@ export function CaseFilesList({ files }: CaseFilesListProps) {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span>{(file.file_size / 1024).toFixed(1)} KB</span>
                     <span>•</span>
-                    <span className="capitalize">{file.status.replace('_', ' ')}</span>
+                    <span className="capitalize">{FILE_STATUS_LABELS[file.status] ?? file.status}</span>
                     {file.updated_at && (
                         <>
                             <span>•</span>

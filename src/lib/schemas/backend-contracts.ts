@@ -48,6 +48,7 @@ export const createCaseSchema = z.object({
   template_snapshot: z.record(z.string(), z.any()).optional(), // JSONB. WARNING: Must validate against FileCategoryEnum
   template_id: z.string().uuid().optional().nullable(),
   status: z.enum(["draft", "in_progress"]).default("draft"),
+  questionnaire_answers: z.record(z.string(), z.any()).optional(),
 });
 
 export const updateCaseSchema = z.object({

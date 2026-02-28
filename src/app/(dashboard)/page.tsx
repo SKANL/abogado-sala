@@ -7,9 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6 md:space-y-8">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold tracking-tight">Dashboard</h2>
       </div>
       <Suspense fallback={<DashboardSkeleton />}>
         <DashboardContent />

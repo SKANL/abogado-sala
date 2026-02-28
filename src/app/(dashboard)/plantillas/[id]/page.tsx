@@ -17,13 +17,14 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
     }
 
     return (
-        <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight">Editar Plantilla</h1>
-                <p className="text-muted-foreground">Modifica la estructura y campos de tu plantilla.</p>
+        <div className="flex flex-col gap-3 h-full">
+            <div className="space-y-0.5 shrink-0">
+                <h1 className="text-xl font-semibold tracking-tight">Editar Plantilla</h1>
+                <p className="text-sm text-muted-foreground">Modifica la estructura y campos de tu plantilla.</p>
             </div>
-
-            <TemplateBuilder initialData={template} />
+            <div className="flex-1 min-h-0">
+                <TemplateBuilder initialData={template} />
+            </div>
         </div>
     );
 }

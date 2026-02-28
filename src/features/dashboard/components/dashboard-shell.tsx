@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { OwnerDashboard } from "./owner-dashboard";
 import { LawyerDashboard } from "./lawyer-dashboard";
 import { redirect } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export async function DashboardShell() {
   const supabase = await createClient();
@@ -20,7 +22,17 @@ export async function DashboardShell() {
 
   if (!orgId) {
       // Handle edge case: User has no org (e.g. invite pending acceptance or broken state)
-      return <div className="p-4">Error: No Organization Context Found. Contact Support.</div>;
+      return (
+        <div className="flex items-center justify-center p-8">
+          <Alert variant="destructive" className="max-w-md">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Sin contexto de organización</AlertTitle>
+            <AlertDescription>
+              Tu cuenta no está asociada a ninguna organización. Contacta al soporte o acepta la invitación pendiente.
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
   }
 
   const isOwner = role === "admin" || role === "owner"; // 'admin' usually implies owner/admin in this context based on schema

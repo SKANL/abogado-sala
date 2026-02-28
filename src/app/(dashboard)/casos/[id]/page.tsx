@@ -3,15 +3,24 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, ExternalLink, Calendar, FileText, ClipboardList } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Copy, ExternalLink, Calendar, FileText, ClipboardList, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CopyLinkButton } from "@/features/cases/components/copy-link-button";
 import { CaseActionsDropdown } from "@/features/cases/components/case-actions-menu";
 import { CaseFilesList } from "@/features/cases/components/case-files-list";
-
 import { CaseRealtimeListener } from "@/features/cases/components/case-realtime-listener";
 import { CaseStatusSelector } from "@/features/cases/components/case-status-selector";
+
+const WIZARD_TOTAL_STEPS = 4;
+const STEP_NAMES: Record<number, string> = {
+  0: "Bienvenida",
+  1: "Consentimiento",
+  2: "Información",
+  3: "Documentación",
+  4: "Finalizado",
+};
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -33,6 +42,9 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
 
   // Calculate URL for client portal
   const portalUrl = `/sala/${c.token}`;
+  const stepIdx = c.current_step_index ?? 0;
+  const progressPct = Math.round((stepIdx / WIZARD_TOTAL_STEPS) * 100);
+  const stepName = STEP_NAMES[stepIdx] ?? `Paso ${stepIdx}`;
 
   return (
     <div className="space-y-6">
@@ -40,6 +52,13 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <Button variant="ghost" size="sm" asChild className="h-7 px-2 text-muted-foreground">
+                        <Link href="/casos">
+                            <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Expedientes
+                        </Link>
+                    </Button>
+                </div>
                 <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold tracking-tight">Expediente {c.client?.full_name}</h1>
                     <CaseStatusSelector caseId={c.id} currentStatus={c.status} />
@@ -66,7 +85,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             <div className="space-y-6 md:col-span-2">
                  
                 <Tabs defaultValue="documents" className="w-full">
-                    <TabsList className="flex w-full overflow-x-auto scrollbar-hide shrink-0 lg:w-[400px] justify-start p-1 h-auto">
+                    <TabsList className="flex w-full overflow-x-auto scrollbar-hide shrink-0 lg:w-100 justify-start p-1 h-auto">
                         <TabsTrigger value="documents" className="flex-1 whitespace-nowrap">Documentación</TabsTrigger>
                         <TabsTrigger value="questionnaire" className="flex-1 whitespace-nowrap">Cuestionario</TabsTrigger>
                     </TabsList>
@@ -109,8 +128,15 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                                         })}
                                     </div>
                                 ) : (
-                                     <div className="text-sm text-muted-foreground py-8 text-center">
-                                        El cliente aún no ha completado el cuestionario.
+                                    <div className="flex flex-col items-center justify-center py-10 gap-4 text-center">
+                                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                            <ClipboardList className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-medium">El cliente aún no ha completado el cuestionario</p>
+                                            <p className="text-xs text-muted-foreground">Comparte el enlace del portal para que el cliente pueda responder.</p>
+                                        </div>
+                                        <CopyLinkButton token={c.token} />
                                     </div>
                                 )}
                             </CardContent>
@@ -153,9 +179,13 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                     <CardContent className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Paso Actual</span>
-                            <span className="font-bold">{c.current_step_index}</span>
+                            <span className="font-semibold">{stepName}</span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="space-y-1.5">
+                            <Progress value={progressPct} className="h-2" />
+                            <p className="text-xs text-muted-foreground text-right tabular-nums">{progressPct}% completado</p>
+                        </div>
+                        <div className="flex items-center justify-between text-sm pt-1">
                             <span className="text-muted-foreground">Vencimiento</span>
                             <span className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />

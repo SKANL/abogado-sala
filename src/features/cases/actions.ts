@@ -23,6 +23,14 @@ export async function createCaseAction(
           rawData.template_snapshot = {};
       }
   }
+  // Handle JSON parsing for questionnaire_answers
+  if (typeof rawData.questionnaire_answers === 'string') {
+      try {
+          rawData.questionnaire_answers = JSON.parse(rawData.questionnaire_answers);
+      } catch (e) {
+          rawData.questionnaire_answers = {};
+      }
+  }
 
   const parse = createCaseSchema.safeParse(rawData);
 

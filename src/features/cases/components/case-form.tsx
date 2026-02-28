@@ -14,13 +14,15 @@ import { Card, CardContent } from "@/components/ui/card";
 interface CaseFormProps {
     clients: { id: string, full_name: string }[];
     templates: { id: string, title: string, schema: any }[];
+    preselectedClientId?: string;
 }
 
 const initialState: Result<any> = { success: false, error: "" };
 
-export function CaseForm({ clients, templates }: CaseFormProps) {
+export function CaseForm({ clients, templates, preselectedClientId }: CaseFormProps) {
     const [state, action, isPending] = useActionState(createCaseAction, initialState);
     const router = useRouter();
+    const [selectedClientId, setSelectedClientId] = useState<string>(preselectedClientId ?? "");
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
     const [templateData, setTemplateData] = useState<Record<string, any>>({});
     
@@ -35,7 +37,7 @@ export function CaseForm({ clients, templates }: CaseFormProps) {
     useEffect(() => {
         if (state.success) {
             toast.success("Expediente creado correctamente");
-            router.push("/casos");
+            router.push(`/casos/${(state as any).data?.id}`);
             router.refresh();
         } else if (state.error) {
             toast.error(state.error);
@@ -53,7 +55,13 @@ export function CaseForm({ clients, templates }: CaseFormProps) {
         <form action={action} className="space-y-6">
              <div className="space-y-2">
                 <Label htmlFor="client_id">Cliente</Label>
-                <Select name="client_id" required disabled={isPending}>
+                <Select
+                    name="client_id"
+                    required
+                    disabled={isPending}
+                    value={selectedClientId}
+                    onValueChange={setSelectedClientId}
+                >
                     <SelectTrigger>
                         <SelectValue placeholder="Selecciona un cliente" />
                     </SelectTrigger>
@@ -148,6 +156,11 @@ export function CaseForm({ clients, templates }: CaseFormProps) {
                 value={JSON.stringify(selectedTemplate?.schema || {})} 
             />
             <input type="hidden" name="template_id" value={selectedTemplateId || ""} />
+            <input
+                type="hidden"
+                name="questionnaire_answers"
+                value={JSON.stringify(Object.keys(templateData).length > 0 ? templateData : {})}
+            />
             
             <div className="space-y-2">
                  <Label htmlFor="status">Estado Inicial</Label>

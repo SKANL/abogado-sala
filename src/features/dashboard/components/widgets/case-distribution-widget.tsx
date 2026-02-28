@@ -57,12 +57,12 @@ export function CaseDistributionWidget({ data, total }: CaseDistributionWidgetPr
     });
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Estado de Expedientes</CardTitle>
         <CardDescription>Distribución de carga</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col items-center justify-center space-y-6">
+      <CardContent className="flex flex-col items-center gap-4 pb-6">
         
         {/* Donut Chart */}
         <div className="relative w-40 h-40">

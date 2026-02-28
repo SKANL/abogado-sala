@@ -26,7 +26,7 @@ export default function ProfilePage() {
     }, [state]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div>
                 <h3 className="text-lg font-medium">Mi Perfil</h3>
                 <p className="text-sm text-muted-foreground">

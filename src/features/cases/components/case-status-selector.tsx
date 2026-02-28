@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { updateCaseAction } from "@/features/cases/actions";
 import { Database } from "@/lib/supabase/database.types";
+import { STATUS_CLASSES } from "@/lib/constants";
 
 type CaseStatus = Database["public"]["Enums"]["case_status"];
 
@@ -60,7 +62,13 @@ export function CaseStatusSelector({ caseId, currentStatus }: CaseStatusSelector
       onValueChange={handleStatusChange}
       disabled={isUpdating}
     >
-      <SelectTrigger className="w-[160px] h-8 text-xs font-semibold">
+      <SelectTrigger
+        className={cn(
+          "w-auto h-7 min-w-30 text-xs font-semibold border rounded-full px-3",
+          "focus:ring-0 focus:ring-offset-0 focus-visible:ring-0",
+          STATUS_CLASSES[currentStatus] ?? ""
+        )}
+      >
         <SelectValue placeholder="Estado..." />
       </SelectTrigger>
       <SelectContent>

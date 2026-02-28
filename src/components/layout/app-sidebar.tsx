@@ -12,43 +12,57 @@ import {
   SidebarFooter,
   SidebarHeader
 } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/providers/auth-provider";
-import { Home, Users, Briefcase, Settings, LogOut, FileText } from "lucide-react";
+import { Home, Users, UsersRound, Briefcase, Settings, LogOut, FileText, ChevronUp } from "lucide-react";
 import Link from "next/link";
-import { logoutAction } from "@/features/auth/actions"; // We need to export logout from auth actions
+import { usePathname } from "next/navigation";
+import { logoutAction } from "@/features/auth/actions";
 
-// Placeholder items
 const items = [
   {
     title: "Inicio",
     url: "/dashboard",
     icon: Home,
+    exact: true,
   },
   {
     title: "Clientes",
     url: "/clientes",
     icon: Users,
+    exact: false,
   },
   {
     title: "Expedientes",
     url: "/casos",
     icon: Briefcase,
+    exact: false,
   },
   {
     title: "Equipo",
     url: "/equipo",
-    icon: Users,
+    icon: UsersRound,   // Distinct from Clientes (Users)
+    exact: false,
   },
+  // {
+  //   title: "Ajustes",
+  //   url: "/ajustes",
+  //   icon: Settings,
+  //   exact: false,
+  // },
   {
-    title: "Ajustes",
-    url: "/ajustes",
-    icon: Settings,
+    title: "Plantillas",
+    url: "/plantillas",
+    icon: FileText,
+    exact: false,
   },
-  {
-      title: "Plantillas",
-      url: "/plantillas",
-      icon: FileText, // Need to import FileText
-  }
 ];
 
 import { useOrganization } from "@/components/providers/organization-provider";
@@ -57,9 +71,15 @@ import { Badge } from "@/components/ui/badge";
 export function AppSidebar() {
   const { user } = useAuth();
   const { organization } = useOrganization();
-  
-  // Conditionally render based on role (todo)
-  
+  const pathname = usePathname();
+
+  const isActive = (url: string, exact = false) =>
+    exact ? pathname === url : pathname === url || pathname.startsWith(url + "/");
+
+  const displayName = user?.user_metadata?.full_name || user?.email || "Usuario";
+  const initials = displayName.charAt(0).toUpperCase();
+  const avatarUrl = user?.user_metadata?.avatar_url;
+
   return (
     <Sidebar variant="floating">
       <SidebarHeader className="p-4 border-b">
@@ -88,7 +108,7 @@ export function AppSidebar() {
             )}
          </div>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
@@ -96,8 +116,12 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url, item.exact)}
+                    className="transition-all duration-150"
+                  >
+                    <Link href={item.url} aria-current={isActive(item.url, item.exact) ? "page" : undefined}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -108,15 +132,48 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
-      <SidebarFooter className="p-4 border-t">
+
+      <SidebarFooter className="p-2 border-t">
         <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => logoutAction()}>
-                    <LogOut />
-                    <span>Cerrar Sesión</span>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton className="h-12 gap-3">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarImage src={avatarUrl} alt={displayName} />
+                    <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start min-w-0 flex-1 overflow-hidden">
+                    <span className="text-sm font-medium truncate leading-tight w-full">
+                      {displayName}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground leading-tight truncate w-full">
+                      {user?.email}
+                    </span>
+                  </div>
+                  <ChevronUp className="h-4 w-4 text-muted-foreground ml-auto shrink-0" />
                 </SidebarMenuButton>
-            </SidebarMenuItem>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-56 mb-1">
+                <DropdownMenuItem asChild>
+                  <Link href="/perfil">Mi Perfil</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/ajustes">Ajustes</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => logoutAction()}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar Sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

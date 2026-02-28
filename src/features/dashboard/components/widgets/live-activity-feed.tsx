@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/lib/supabase/client";
 import { Activity, FileText, User, Shield, Upload, FileMinus, FilePen } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -99,8 +98,8 @@ export function LiveActivityFeed({ initialLogs, orgId, actorsMap = {} }: LiveAct
             Actividad Reciente
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 p-0">
-        <ScrollArea className="h-[400px] pr-4">
+      <CardContent className="p-0">
+        <div className="pr-4">
              {groupedLogs.length === 0 ? (
                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm py-8 space-y-2">
                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -139,7 +138,7 @@ export function LiveActivityFeed({ initialLogs, orgId, actorsMap = {} }: LiveAct
                     })}
                 </div>
              )}
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

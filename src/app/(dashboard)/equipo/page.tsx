@@ -27,11 +27,11 @@ export default async function TeamPage() {
       .eq("status", "pending");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Equipo</h1>
-          <p className="text-muted-foreground">Gestiona los miembros de tu organización.</p>
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-semibold tracking-tight">Equipo</h1>
+          <p className="text-sm text-muted-foreground">Gestiona los miembros de tu organización.</p>
         </div>
         <InviteMemberDialog />
       </div>
