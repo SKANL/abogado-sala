@@ -24,11 +24,11 @@ export function MobileFab() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={16} className="w-56 mb-2">
-          <DropdownMenuItem onClick={() => router.push("/casos")}>
+          <DropdownMenuItem onClick={() => router.push("/casos/new")}>
             <FolderPlus className="mr-2 h-4 w-4" />
             <span>Nuevo Expediente</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/clientes")}>
+          <DropdownMenuItem onClick={() => router.push("/clientes/new")}>
             <UserPlus className="mr-2 h-4 w-4" />
             <span>Nuevo Cliente</span>
           </DropdownMenuItem>

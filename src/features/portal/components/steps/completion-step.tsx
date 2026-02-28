@@ -1,11 +1,24 @@
 "use client";
 
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Home } from "lucide-react";
 import Link from "next/link";
 
 export function CompletionStep() {
+  useEffect(() => {
+    // Lazy-import canvas-confetti to keep bundle lean
+    import("canvas-confetti").then(({ default: confetti }) => {
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.55 },
+        colors: ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b"],
+      });
+    });
+  }, []);
+
   return (
     <div className="space-y-6 text-center">
       <Card className="border-green-100 bg-green-50/50">

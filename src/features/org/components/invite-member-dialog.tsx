@@ -10,6 +10,7 @@ import { Result } from "@/types";
 import { toast } from "sonner";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Plus } from "lucide-react";
+import { FormFieldError } from "@/components/ui/form-field-error";
 
 const initialState: Result<any> = { success: false, error: "" };
 
@@ -50,9 +51,7 @@ export function InviteMemberDialog() {
                             required
                             disabled={isPending}
                         />
-                         {!state.success && state.validationErrors?.email && (
-                            <p className="text-sm text-destructive">{state.validationErrors.email[0]}</p>
-                        )}
+                        <FormFieldError message={!state.success ? state.validationErrors?.email?.[0] : null} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="role">Rol</Label>

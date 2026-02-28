@@ -6,6 +6,7 @@ import { CompactTeamList, TeamMemberStat } from "./widgets/compact-team-list";
 import { CaseDistributionWidget } from "./widgets/case-distribution-widget";
 import { KpiCard } from "./widgets/kpi-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OnboardingChecklist } from "./onboarding-checklist";
 
 interface OwnerDashboardProps {
     orgId: string;
@@ -26,7 +27,8 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
         { data: auditLogs },
         { data: allCases },
         { count: newClientsMonth },
-        { count: newCasesMonth }
+        { count: newCasesMonth },
+        { count: templateCount },
     ] = await Promise.all([
         supabase.from("clients").select("*", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "active"),
         supabase.from("cases").select("*", { count: "exact", head: true }).eq("org_id", orgId).in("status", ["in_progress", "review"]),
@@ -43,7 +45,8 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
             .returns<any[]>(),
         supabase.from("cases").select("status").eq("org_id", orgId),
         supabase.from("clients").select("*", { count: "exact", head: true }).eq("org_id", orgId).gte("created_at", startOfMonth),
-        supabase.from("cases").select("*", { count: "exact", head: true }).eq("org_id", orgId).gte("created_at", startOfMonth)
+        supabase.from("cases").select("*", { count: "exact", head: true }).eq("org_id", orgId).gte("created_at", startOfMonth),
+        supabase.from("templates").select("*", { count: "exact", head: true }).eq("org_id", orgId),
     ]);
 
     // Fetch details for actors in logs
@@ -80,6 +83,13 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
 
   return (
     <div className="space-y-4">
+      {/* Onboarding checklist — visible only when org has no data yet */}
+      <OnboardingChecklist
+        hasTemplate={(templateCount ?? 0) > 0}
+        hasClient={(clientCount ?? 0) > 0}
+        hasCase={(allCases?.length ?? 0) > 0}
+      />
+
       {/* 1. Top Level KPIs - The "Pulse" */}
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <KpiCard 

@@ -10,7 +10,7 @@ import { DocumentUploadSlot } from "./document-upload-slot";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, Lock } from "lucide-react";
+import { Info, Lock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -20,9 +20,11 @@ interface PortalWizardProps {
   initialCaseData: CasePublic['case'];
   clientName: string;
   files: CasePublic['files'];
+  orgName?: string;
+  orgLogoUrl?: string;
 }
 
-export function PortalWizard({ token, initialCaseData, clientName, files }: PortalWizardProps) {
+export function PortalWizard({ token, initialCaseData, clientName, files, orgName, orgLogoUrl }: PortalWizardProps) {
   const router = useRouter();
   
   // NOTE: Schema-driven would be more dynamic, but for now we map:
@@ -57,6 +59,13 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
     }
   };
 
+  // Back navigation — available on steps 1, 2, 3 (not on welcome or completion)
+  const handleBack = () => {
+    if (currentStep > 0 && currentStep < 4) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const hasFileRequirements = files.length > 0;
   const areAllFilesUploaded = hasFileRequirements && files.every((f: any) => f.status === 'uploaded' || f.status === 'exception');
 
@@ -64,10 +73,39 @@ export function PortalWizard({ token, initialCaseData, clientName, files }: Port
     <div className="max-w-3xl mx-auto space-y-8">
       {/* Top Bar / Progress */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-            <span className="font-medium text-foreground">
-                Paso {currentStep + 1}: {stepsMetadata[currentStep]?.title || 'Procesando'}
+        {/* Org branding row */}
+        {orgName && (
+          <div className="flex items-center gap-2 mb-3">
+            {orgLogoUrl ? (
+              <img
+                src={orgLogoUrl}
+                alt={orgName}
+                className="h-6 w-auto object-contain"
+              />
+            ) : null}
+            <span className="text-sm font-medium text-muted-foreground">
+              {orgName}
             </span>
+          </div>
+        )}
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+            <div className="flex items-center gap-2">
+              {/* Back button — visible on steps 1–3 only */}
+              {currentStep > 0 && currentStep < 4 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBack}
+                  className="h-7 px-2 gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+              )}
+              <span className="font-medium text-foreground">
+                  Paso {currentStep + 1}: {stepsMetadata[currentStep]?.title || 'Procesando'}
+              </span>
+            </div>
             <span className="flex items-center gap-1">
                 <Lock className="w-3 h-3" /> Seguro y Encriptado
             </span>

@@ -1,46 +1,52 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { signupWithOrgAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Result } from "@/types";
+import { useRouter } from "next/navigation";
+import { FormFieldError } from "@/components/ui/form-field-error";
 
 const initialState: Result<void> = { success: false, error: "" };
 
 export default function RegisterPage() {
   const [state, action, isPending] = useActionState(signupWithOrgAction, initialState);
+  const router = useRouter();
 
-  // Success state handling: ideally backend redirects or we show a check email screen.
-  // The action currently returns success=true if okay.
+  // Try to redirect to dashboard on success - if email confirmation is off, user is already logged in.
+  // If confirmation is required, middleware will redirect them to login.
+  useEffect(() => {
+    if (state?.success) {
+      const timer = setTimeout(() => router.push("/dashboard"), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [state?.success, router]);
+
   if (state?.success) {
-      return (
-          <Card className="w-full">
-              <CardHeader>
-                  <CardTitle className="text-green-600">¡Registro Exitoso!</CardTitle>
-                  <CardDescription>
-                      Bienvenido a Abogado Sala.
-                  </CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-sm text-foreground">
-                    Tu cuenta y organización han sido creadas.
-                    {/* Assuming email confirmation is OFF for trial, or we prompt for it */}
-                    Por favor inicia sesión para continuar.
-                  </p>
-              </CardContent>
-              <CardFooter>
-                  <Button asChild className="w-full">
-                      <Link href="/login">Ir a Iniciar Sesión</Link>
-                  </Button>
-              </CardFooter>
-          </Card>
-      );
+    return (
+      <Card className="w-full">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+            <CheckCircle2 className="h-6 w-6 text-green-600" />
+          </div>
+          <CardTitle className="text-green-700">¡Bienvenido a AbogadoSala!</CardTitle>
+          <CardDescription>
+            Tu cuenta y despacho han sido creados exitosamente. Redirigiendo al dashboard...
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button className="w-full" onClick={() => router.push("/dashboard")}>
+            Ir al Dashboard ahora
+          </Button>
+        </CardFooter>
+      </Card>
+    );
   }
 
   return (
@@ -62,9 +68,7 @@ export default function RegisterPage() {
               required
               disabled={isPending}
             />
-            {state?.validationErrors?.full_name && (
-              <p className="text-sm text-destructive">{state.validationErrors.full_name[0]}</p>
-            )}
+            <FormFieldError message={state?.validationErrors?.full_name?.[0]} />
           </div>
           
            <div className="space-y-2">
@@ -76,9 +80,7 @@ export default function RegisterPage() {
               required
               disabled={isPending}
             />
-            {state?.validationErrors?.org_name && (
-              <p className="text-sm text-destructive">{state.validationErrors.org_name[0]}</p>
-            )}
+            <FormFieldError message={state?.validationErrors?.org_name?.[0]} />
           </div>
 
           <div className="space-y-2">
@@ -91,9 +93,7 @@ export default function RegisterPage() {
               required
               disabled={isPending}
             />
-            {state?.validationErrors?.email && (
-              <p className="text-sm text-destructive">{state.validationErrors.email[0]}</p>
-            )}
+            <FormFieldError message={state?.validationErrors?.email?.[0]} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Contraseña</Label>
@@ -105,9 +105,7 @@ export default function RegisterPage() {
               minLength={6}
               disabled={isPending}
             />
-             {state?.validationErrors?.password && (
-              <p className="text-sm text-destructive">{state.validationErrors.password[0]}</p>
-            )}
+            <FormFieldError message={state?.validationErrors?.password?.[0]} />
           </div>
           
           {state?.error && (

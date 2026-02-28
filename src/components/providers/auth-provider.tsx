@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface AuthContextType {
@@ -12,6 +12,8 @@ interface AuthContextType {
     name: string;
     slug: string;
     plan_tier: string;
+    plan_status: string | null;
+    trial_ends_at: string | null;
     primary_color: string | null;
     logo_url: string | null;
   } | null;
@@ -31,7 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [org, setOrg] = useState<AuthContextType['org']>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
+  // Stable ref — prevents new client on every render which caused infinite re-subscription
+  const supabase = useRef(createClient()).current;
 
   useEffect(() => {
     const {
@@ -52,10 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(false);
 
+      // Only react to explicit auth events — not INITIAL_SESSION or TOKEN_REFRESHED,
+      // which fired on every session recovery and caused repeated router.refresh() loops.
       if (event === "SIGNED_OUT") {
-        router.push("/login"); // or router.refresh()
-        router.refresh();
+        router.push("/login");
       } else if (event === "SIGNED_IN") {
+        // Refresh server components once after a real login so RSC data is fresh
         router.refresh();
       }
     });
@@ -63,7 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, supabase]);
+  // supabase is now a stable ref — safe to omit from deps; router is stable from Next.js
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();

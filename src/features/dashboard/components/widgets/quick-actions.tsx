@@ -11,13 +11,13 @@ export function QuickActions() {
         <CardTitle>Acciones Rápidas</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4">
-        <Link href="/clientes/nuevo">
+        <Link href="/clientes/new">
             <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
                 <UserPlus className="w-6 h-6" />
                 <span>Nuevo Cliente</span>
             </Button>
         </Link>
-        <Link href="/casos/nuevo">
+        <Link href="/casos/new">
             <Button variant="outline" className="w-full h-24 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors">
                 <FolderPlus className="w-6 h-6" />
                 <span>Nuevo Expediente</span>

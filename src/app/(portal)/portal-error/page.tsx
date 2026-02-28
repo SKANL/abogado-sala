@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function PortalErrorPage({
+export default async function PortalErrorPage({
   searchParams,
 }: {
-  searchParams: { reason?: string };
+  searchParams: Promise<{ reason?: string }>;
 }) {
-  const isExpired = searchParams.reason === "expired";
+  const { reason } = await searchParams;
+  const isExpired = reason === "expired";
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">

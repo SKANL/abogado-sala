@@ -2,6 +2,7 @@ import { SubscriptionStatus } from "@/features/billing/components/subscription-s
 import { PricingTable } from "@/features/billing/components/pricing-table";
 import { Separator } from "@/components/ui/separator";
 import { getSubscriptionAction } from "@/features/billing/actions";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function BillingPage() {
     const result = await getSubscriptionAction();
@@ -14,10 +15,10 @@ export default async function BillingPage() {
 
     return (
         <div className="space-y-8 max-w-5xl">
-            <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">Facturación y Planes</h1>
-                <p className="text-muted-foreground">Gestiona tu suscripción y métodos de pago.</p>
-            </div>
+            <PageHeader
+                title="Facturación y Planes"
+                description="Gestiona tu suscripción y métodos de pago."
+            />
 
             <SubscriptionStatus 
                 planTier={planTier}
@@ -29,7 +30,7 @@ export default async function BillingPage() {
             <Separator className="my-8" />
 
             <div className="space-y-6">
-                <h2 className="text-2xl font-semibold">Planes Disponibles</h2>
+                <h2 className="text-xl font-semibold">Planes Disponibles</h2>
                 <PricingTable />
             </div>
         </div>

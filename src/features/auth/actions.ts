@@ -172,6 +172,68 @@ export async function logoutAction() {
     redirect("/login");
 }
 
+export async function forgotPasswordAction(
+  prevState: any,
+  formData: FormData
+): Promise<Result<void>> {
+  const email = formData.get("email") as string;
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return {
+      success: false,
+      error: "Por favor ingresa un email válido",
+      code: ERROR_CODES.VAL_INVALID_INPUT,
+    };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/actualizar-password`,
+  });
+
+  if (error) {
+    return handleError(error);
+  }
+
+  // Always return success to avoid email enumeration attacks
+  return { success: true, data: undefined };
+}
+
+export async function updatePasswordAction(
+  prevState: any,
+  formData: FormData
+): Promise<Result<void>> {
+  const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirm_password") as string;
+
+  if (!password || password.length < 6) {
+    return {
+      success: false,
+      error: "La contraseña debe tener al menos 6 caracteres",
+      code: ERROR_CODES.VAL_INVALID_INPUT,
+    };
+  }
+
+  if (password !== confirmPassword) {
+    return {
+      success: false,
+      error: "Las contraseñas no coinciden",
+      code: ERROR_CODES.VAL_INVALID_INPUT,
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return handleError(error);
+  }
+
+  revalidatePath("/perfil");
+  return { success: true, data: undefined };
+}
+
 export async function updateProfileAction(
   prevState: any,
   formData: FormData

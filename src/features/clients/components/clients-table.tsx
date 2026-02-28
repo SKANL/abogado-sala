@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -16,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { STATUS_LABELS, STATUS_CLASSES } from "@/lib/constants";
+import { STATUS_LABELS } from "@/lib/constants";
 import { Search, User, Users, Mail, Phone, ExternalLink, X } from "lucide-react";
 import Link from "next/link";
 
@@ -156,9 +157,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={STATUS_CLASSES[client.status] ?? ""}>
-                    {STATUS_LABELS[client.status] || client.status}
-                  </Badge>
+                  <StatusBadge status={client.status} />
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
@@ -206,9 +205,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                     {client.phone && <span>{client.phone}</span>}
                   </div>
                 </div>
-                <Badge variant="outline" className={STATUS_CLASSES[client.status] ?? ""}>
-                  {STATUS_LABELS[client.status] || client.status}
-                </Badge>
+                <StatusBadge status={client.status} />
               </div>
               <div className="flex justify-end pt-2">
                 <Button

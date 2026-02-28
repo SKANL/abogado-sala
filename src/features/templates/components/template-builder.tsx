@@ -10,6 +10,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { createTemplateAction, updateTemplateAction, syncTemplateToCasesAction } from '../actions';
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
@@ -137,12 +148,6 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
 
   const handleSync = async () => {
       if (!initialData?.id) return;
-      
-      const confirmSync = window.confirm(
-          "¿Estás seguro de que quieres sincronizar esta plantilla con todos los expedientes activos? Esto actualizará los campos del formulario para los clientes."
-      );
-      
-      if (!confirmSync) return;
       
       setIsSyncing(true);
       const result = await syncTemplateToCasesAction(initialData.id);
@@ -341,14 +346,34 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
                         {isSaving ? "Guardando..." : "Guardar Plantilla"}
                     </Button>
                     {isEditing && (
-                        <Button 
-                            variant="secondary" 
-                            className="w-full" 
-                            onClick={handleSync} 
-                            disabled={isSaving || isSyncing}
-                        >
-                            {isSyncing ? "Sincronizando..." : "Sincronizar Expedientes Activos"}
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="secondary"
+                              className="w-full"
+                              disabled={isSaving || isSyncing}
+                            >
+                              {isSyncing ? "Sincronizando..." : "Sincronizar Expedientes Activos"}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Sincronizar plantilla?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esto actualizará el <strong>snapshot de campos</strong> en todos los
+                                expedientes activos que usen esta plantilla. Los datos ya respondidos
+                                por los clientes no se eliminarán, pero el formulario reflejará la
+                                estructura actualizada.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleSync}>
+                                Sí, sincronizar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     )}
                 </div>
             </CardContent>

@@ -10,6 +10,7 @@ import { Result } from "@/types";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { FormFieldError } from "@/components/ui/form-field-error";
 
 interface CaseFormProps {
     clients: { id: string, full_name: string }[];
@@ -73,9 +74,7 @@ export function CaseForm({ clients, templates, preselectedClientId }: CaseFormPr
                         ))}
                     </SelectContent>
                 </Select>
-                 {!state.success && state.validationErrors?.client_id && (
-                    <p className="text-sm text-destructive">{state.validationErrors.client_id[0]}</p>
-                )}
+                <FormFieldError message={!state.success ? state.validationErrors?.client_id?.[0] : null} />
             </div>
             
             <div className="space-y-2">
@@ -173,9 +172,7 @@ export function CaseForm({ clients, templates, preselectedClientId }: CaseFormPr
                         <SelectItem value="in_progress">En Progreso</SelectItem>
                     </SelectContent>
                  </Select>
-                  {!state.success && state.validationErrors?.status && (
-                    <p className="text-sm text-destructive">{state.validationErrors.status[0]}</p>
-                )}
+                <FormFieldError message={!state.success ? state.validationErrors?.status?.[0] : null} />
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

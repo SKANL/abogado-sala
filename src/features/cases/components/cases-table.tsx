@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -17,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { STATUS_LABELS, STATUS_CLASSES } from "@/lib/constants";
+import { STATUS_LABELS } from "@/lib/constants";
 import { Search, FolderOpen, FileStack, Settings2, X, Copy, Check } from "lucide-react";
 import Link from "next/link";
 
@@ -177,9 +178,7 @@ export function CasesTable({ cases }: CasesTableProps) {
                     <CopyableToken token={c.token} />
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={STATUS_CLASSES[c.status] ?? ""}>
-                      {STATUS_LABELS[c.status] || c.status}
-                    </Badge>
+                    <StatusBadge status={c.status} />
                   </TableCell>
                   <TableCell className="min-w-32.5">
                     <div className="flex flex-col gap-1.5">
@@ -243,9 +242,7 @@ export function CasesTable({ cases }: CasesTableProps) {
                     ref: {c.token?.substring(0, 8)}
                   </div>
                 </div>
-                <Badge variant="outline" className={STATUS_CLASSES[c.status] ?? ""}>
-                  {STATUS_LABELS[c.status] || c.status}
-                </Badge>
+                <StatusBadge status={c.status} />
               </div>
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs text-muted-foreground">

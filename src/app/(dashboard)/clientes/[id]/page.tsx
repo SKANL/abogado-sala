@@ -3,12 +3,11 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientForm } from "@/features/clients/components/client-form";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { FileText, User, ArrowLeft, FolderOpen, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { STATUS_LABELS, STATUS_CLASSES } from "@/lib/constants";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const WIZARD_TOTAL_STEPS = 4;
 const STEP_NAMES: Record<number, string> = {
@@ -56,12 +55,7 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
                     </div>
                     <h1 className="text-xl font-semibold tracking-tight">{client.full_name}</h1>
                     <div className="flex items-center gap-2">
-                        <Badge
-                            variant="outline"
-                            className={STATUS_CLASSES[client.status] ?? ""}
-                        >
-                            {STATUS_LABELS[client.status] ?? client.status}
-                        </Badge>
+                        <StatusBadge status={client.status} />
                         <p className="text-sm text-muted-foreground italic">
                             Registrado el {new Date(client.created_at).toLocaleDateString("es-MX", { timeZone: "UTC" })}
                         </p>
@@ -136,9 +130,7 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
                                                             <span className="font-medium text-sm font-mono text-muted-foreground">
                                                                 {c.id.slice(0, 8)}&hellip;
                                                             </span>
-                                                            <Badge variant="outline" className={STATUS_CLASSES[c.status] ?? ""}>
-                                                                {STATUS_LABELS[c.status] || c.status}
-                                                            </Badge>
+                                                            <StatusBadge status={c.status} />
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <Progress value={progressPct} className="h-1.5 flex-1 max-w-30" />
@@ -163,7 +155,7 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
                                     <FolderOpen className="h-8 w-8 text-muted-foreground/30 mx-auto" />
                                     <p className="text-sm text-muted-foreground">Este cliente no tiene expedientes registrados.</p>
                                     <Button variant="outline" size="sm" asChild className="mt-2">
-                                        <Link href="/casos/new">Crear expediente</Link>
+                                        <Link href={`/casos/new?client_id=${client.id}`}>Crear expediente</Link>
                                     </Button>
                                 </div>
                             )}

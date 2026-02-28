@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { CaseForm } from "@/features/cases/components/case-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function NewCasePage({
     searchParams,
@@ -30,14 +31,12 @@ export default async function NewCasePage({
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-             <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight">Nuevo Expediente</h1>
-                <p className="text-muted-foreground">
-                    {preselectedClient
-                        ? `Iniciando trámite para ${preselectedClient.full_name}.`
-                        : "Inicia un nuevo trámite para un cliente."}
-                </p>
-            </div>
+            <PageHeader
+                title="Nuevo Expediente"
+                description={preselectedClient
+                    ? `Iniciando trámite para ${preselectedClient.full_name}.`
+                    : "Inicia un nuevo trámite para un cliente."}
+            />
 
             <Card>
                 <CardHeader>

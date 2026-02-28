@@ -17,10 +17,11 @@ export async function LawyerDashboard({ userId }: LawyerDashboardProps) {
     const { data: { user } } = await supabase.auth.getUser();
     const orgId = user?.app_metadata?.org_id;
 
-    // Fetch My Cases Stats
+    // Fetch My Cases Stats - filtered by assigned_to = current user
     const { count: myCasesCount } = await supabase
         .from("cases")
         .select("*", { count: "exact", head: true })
+        .eq("assigned_to", userId)
         .in("status", ["in_progress", "review"]);
 
   return (

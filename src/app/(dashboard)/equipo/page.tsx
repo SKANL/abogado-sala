@@ -4,6 +4,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InviteMemberDialog } from "@/features/org/components/invite-member-dialog";
+import { RevokeInvitationButton } from "@/features/org/components/revoke-invitation-button";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function TeamPage() {
   const supabase = await createClient();
@@ -28,13 +30,11 @@ export default async function TeamPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-semibold tracking-tight">Equipo</h1>
-          <p className="text-sm text-muted-foreground">Gestiona los miembros de tu organización.</p>
-        </div>
-        <InviteMemberDialog />
-      </div>
+      <PageHeader
+        title="Equipo"
+        description="Gestiona los miembros de tu organización."
+        action={<InviteMemberDialog />}
+      />
 
        <Card>
         <CardHeader>
@@ -127,6 +127,7 @@ export default async function TeamPage() {
                                     <TableHead>Email</TableHead>
                                     <TableHead>Rol Invitado</TableHead>
                                     <TableHead>Enviado</TableHead>
+                                    <TableHead className="w-24">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -135,6 +136,9 @@ export default async function TeamPage() {
                                         <TableCell>{inv.email}</TableCell>
                                         <TableCell className="capitalize">{inv.role}</TableCell>
                                         <TableCell>{new Date(inv.created_at).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <RevokeInvitationButton invitationId={inv.id} email={inv.email} />
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -146,7 +150,10 @@ export default async function TeamPage() {
                        {invitations.map((inv) => (
                            <Card key={inv.id} className="overflow-hidden">
                                <CardContent className="p-4 flex flex-col gap-2">
-                                   <div className="font-semibold text-sm truncate" title={inv.email}>{inv.email}</div>
+                                   <div className="flex items-start justify-between gap-2">
+                                       <div className="font-semibold text-sm truncate" title={inv.email}>{inv.email}</div>
+                                       <RevokeInvitationButton invitationId={inv.id} email={inv.email} />
+                                   </div>
                                    <div className="flex items-center justify-between text-xs mt-1">
                                        <Badge variant="outline" className="capitalize text-[10px] h-4">
                                            {inv.role}

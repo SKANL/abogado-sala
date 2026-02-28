@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { updateProfileAction } from "@/features/auth/actions";
+import { updateProfileAction, updatePasswordAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,12 +10,14 @@ import { Result } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FormFieldError } from "@/components/ui/form-field-error";
 
 const initialState: Result<any> = { success: false, error: "" };
 
 export default function ProfilePage() {
     const { user } = useAuth();
     const [state, action, isPending] = useActionState(updateProfileAction, initialState);
+    const [pwState, pwAction, isPwPending] = useActionState(updatePasswordAction, initialState);
 
     useEffect(() => {
         if (state.success) {
@@ -24,6 +26,14 @@ export default function ProfilePage() {
             toast.error(state.error);
         }
     }, [state]);
+
+    useEffect(() => {
+        if (pwState.success) {
+            toast.success("Contraseña actualizada correctamente");
+        } else if (pwState.error) {
+            toast.error(pwState.error);
+        }
+    }, [pwState]);
 
     return (
         <div className="space-y-4">
@@ -64,8 +74,8 @@ export default function ProfilePage() {
                                 defaultValue={user?.user_metadata?.full_name} 
                                 disabled={isPending} 
                             />
-                             {!state.success && state.validationErrors?.full_name && (
-                                <p className="text-sm text-destructive">{state.validationErrors.full_name[0]}</p>
+                            {!state.success && state.validationErrors?.full_name && (
+                                <FormFieldError message={state.validationErrors.full_name[0]} />
                             )}
                         </div>
 
@@ -94,6 +104,50 @@ export default function ProfilePage() {
                         <div className="flex justify-end pt-4">
                             <Button type="submit" disabled={isPending}>
                                 {isPending ? "Guardando..." : "Guardar Cambios"}
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+
+            {/* Password Change Section */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Cambiar Contraseña</CardTitle>
+                    <CardDescription>
+                        Elige una contraseña segura de al menos 6 caracteres.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form action={pwAction} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Nueva Contraseña</Label>
+                            <Input
+                                id="password"
+                                name="password"
+                                type="password"
+                                placeholder="••••••••"
+                                disabled={isPwPending}
+                                autoComplete="new-password"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirm_password">Confirmar Contraseña</Label>
+                            <Input
+                                id="confirm_password"
+                                name="confirm_password"
+                                type="password"
+                                placeholder="••••••••"
+                                disabled={isPwPending}
+                                autoComplete="new-password"
+                            />
+                            {!pwState.success && pwState.error && (
+                                <FormFieldError message={pwState.error} />
+                            )}
+                        </div>
+                        <div className="flex justify-end pt-2">
+                            <Button type="submit" variant="outline" disabled={isPwPending}>
+                                {isPwPending ? "Actualizando..." : "Actualizar Contraseña"}
                             </Button>
                         </div>
                     </form>

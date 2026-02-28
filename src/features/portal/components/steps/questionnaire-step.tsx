@@ -24,13 +24,14 @@ export function QuestionnaireStep({ templateSnapshot, currentAnswers, token, onN
   const [answers, setAnswers] = useState<Record<string, string>>(currentAnswers || {});
   const [submitting, setSubmitting] = useState(false);
 
-  // 1. Extract Questions (filter out 'file' types)
+  // 1. Extract Questions (filter out 'file' types), sorted by saved order
   const questions = Object.entries(templateSnapshot || {})
     .filter(([_, field]: [string, any]) => field.type !== 'file')
     .map(([id, field]: [string, any]) => ({
       id,
       ...field
-    }));
+    }))
+    .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
 
   const handleChange = (id: string, value: string) => {
     setAnswers(prev => ({

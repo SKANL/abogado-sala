@@ -4,6 +4,14 @@ import { CheckCircle2, XCircle, FileText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
+const STATUS_LABELS_ES: Record<string, string> = {
+  draft: "Borrador",
+  in_progress: "En Proceso",
+  review: "En Revisión",
+  completed: "Completado",
+  archived: "Archivado",
+};
+
 // Since this is a public page, we need to be careful about what we show.
 // We should use a Service Role client or just a public RPC if RLS allows.
 // Actually, RLS usually blocks public access to `cases`.
@@ -126,7 +134,7 @@ export default async function ValidationPage({ params }: { params: Promise<{ tok
                         <div className="flex justify-between items-center border-b border-gray-50 pb-2">
                             <span className="text-muted-foreground text-sm">Estado</span>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                                {caseData.case_status}
+                                {STATUS_LABELS_ES[caseData.case_status] || caseData.case_status}
                             </span>
                         </div>
                          <div className="flex justify-between items-center">
@@ -158,7 +166,7 @@ export default async function ValidationPage({ params }: { params: Promise<{ tok
       </Card>
       
       <div className="mt-8 text-center text-xs text-gray-400">
-         Verificado por <strong>NodusLegal</strong> • Plataforma Segura
+        Verificado por <strong>AbogadoSala</strong> • Plataforma Segura
       </div>
     </div>
   );

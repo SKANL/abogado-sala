@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Result } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { FormFieldError } from "@/components/ui/form-field-error";
 
 const initialState: Result<void> = { success: false, error: "" };
 
@@ -44,12 +45,18 @@ export default function LoginPage() {
               required
               disabled={isPending}
             />
-            {!state.success && state.validationErrors?.email && (
-              <p className="text-sm text-destructive">{state.validationErrors.email[0]}</p>
-            )}
+            <FormFieldError message={!state.success ? state.validationErrors?.email?.[0] : null} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Contraseña</Label>
+              <Link
+                href="/recuperar-password"
+                className="text-xs text-primary hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"
@@ -57,9 +64,7 @@ export default function LoginPage() {
               required
               disabled={isPending}
             />
-             {!state.success && state.validationErrors?.password && (
-              <p className="text-sm text-destructive">{state.validationErrors.password[0]}</p>
-            )}
+            <FormFieldError message={!state.success ? state.validationErrors?.password?.[0] : null} />
           </div>
           {!state.success && state.error && (
             <div className="p-3 text-sm font-medium text-destructive bg-destructive/10 rounded-md">

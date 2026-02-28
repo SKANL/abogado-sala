@@ -5,6 +5,7 @@ import { NotificationsSheet } from "@/features/notifications/components/notifica
 import { DynamicBreadcrumb } from "@/components/layout/dynamic-breadcrumb";
 import { CommandMenu } from "@/components/layout/command-menu";
 import { MobileFab } from "@/components/layout/mobile-fab";
+import { TrialBanner } from "@/components/common/trial-banner";
 
 export default function DashboardLayout({
   children,
@@ -26,6 +27,8 @@ export default function DashboardLayout({
                     <NotificationsSheet />
                 </div>
             </div>
+            {/* Trial expiry warning banner — only renders when ≤7 days remain */}
+            <TrialBanner />
             <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
                 {children}
             </div>

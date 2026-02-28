@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { CasesTable } from "@/features/cases/components/cases-table";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function CasesPage() {
   const supabase = await createClient();
@@ -17,17 +18,17 @@ export default async function CasesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-semibold tracking-tight">Expedientes</h1>
-          <p className="text-sm text-muted-foreground">Gestiona los trámites en curso.</p>
-        </div>
-        <Button asChild>
+      <PageHeader
+        title="Expedientes"
+        description="Gestiona los trámites en curso."
+        action={
+          <Button asChild>
             <Link href="/casos/new">
-                <Plus className="mr-2 h-4 w-4" /> Nuevo Expediente
+              <Plus className="mr-2 h-4 w-4" /> Nuevo Expediente
             </Link>
-        </Button>
-      </div>
+          </Button>
+        }
+      />
 
       <Card className="overflow-hidden">
         <CasesTable cases={cases ?? []} />

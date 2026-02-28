@@ -9,6 +9,7 @@ import { Result } from "@/types";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormFieldError } from "@/components/ui/form-field-error";
 
 const initialState: Result<any> = { success: false, error: "" };
 
@@ -51,9 +52,7 @@ export function ClientForm({ initialData }: ClientFormProps) {
                         required
                         disabled={isPending}
                     />
-                    {!state.success && state.validationErrors?.full_name && (
-                        <p className="text-sm text-destructive">{state.validationErrors.full_name[0]}</p>
-                    )}
+                    <FormFieldError message={!state.success ? state.validationErrors?.full_name?.[0] : null} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="email">Email (Opcional)</Label>
@@ -65,9 +64,7 @@ export function ClientForm({ initialData }: ClientFormProps) {
                         placeholder="cliente@email.com"
                         disabled={isPending}
                     />
-                     {!state.success && state.validationErrors?.email && (
-                        <p className="text-sm text-destructive">{state.validationErrors.email[0]}</p>
-                    )}
+                    <FormFieldError message={!state.success ? state.validationErrors?.email?.[0] : null} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="phone">Teléfono (Opcional)</Label>
@@ -78,9 +75,7 @@ export function ClientForm({ initialData }: ClientFormProps) {
                         placeholder="+52 555 555 5555"
                         disabled={isPending}
                     />
-                     {!state.success && state.validationErrors?.phone && (
-                        <p className="text-sm text-destructive">{state.validationErrors.phone[0]}</p>
-                    )}
+                    <FormFieldError message={!state.success ? state.validationErrors?.phone?.[0] : null} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="status">Estado</Label>
@@ -94,9 +89,7 @@ export function ClientForm({ initialData }: ClientFormProps) {
                             <SelectItem value="archived">Archivado</SelectItem>
                         </SelectContent>
                     </Select>
-                     {!state.success && state.validationErrors?.status && (
-                        <p className="text-sm text-destructive">{state.validationErrors.status[0]}</p>
-                    )}
+                    <FormFieldError message={!state.success ? state.validationErrors?.status?.[0] : null} />
                 </div>
             </div>
             

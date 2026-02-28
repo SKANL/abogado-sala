@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { updateOrganizationAction } from "@/features/org/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,19 @@ import { Result } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ImageUploader } from "@/components/common/image-uploader";
+import { FormFieldError } from "@/components/ui/form-field-error";
 
 const initialState: Result<any> = { success: false, error: "" };
 
 export default function SettingsPage() {
-    const { org, loading } = useAuth(); // Correct property name is 'loading'
+    const { org, loading } = useAuth();
     const [state, action, isPending] = useActionState(updateOrganizationAction, initialState);
+    const [color, setColor] = useState<string>(org?.primary_color || "#18181b");
+
+    // Sync color when org loads (async from provider)
+    useEffect(() => {
+        if (org?.primary_color) setColor(org.primary_color);
+    }, [org?.primary_color]);
 
     useEffect(() => {
         if (state.success) {
@@ -62,30 +69,40 @@ export default function SettingsPage() {
                                 disabled={isPending} 
                             />
                             {!state.success && state.validationErrors?.name && (
-                                <p className="text-sm text-destructive">{state.validationErrors.name[0]}</p>
+                                <FormFieldError message={state.validationErrors.name[0]} />
                             )}
                         </div>
 
                          <div className="space-y-2">
-                            <Label htmlFor="primary_color">Color Primario (Hex)</Label>
+                            <Label htmlFor="primary_color_picker">Color Primario (Hex)</Label>
                             <div className="flex gap-2">
-                                <Input 
-                                    id="primary_color" 
-                                    name="primary_color" 
+                                {/* Color swatch picker */}
+                                <input
+                                    id="primary_color_picker"
                                     type="color"
-                                    className="w-12 h-10 p-1 cursor-pointer"
-                                    defaultValue={org?.primary_color || "#18181b"}
-                                    disabled={isPending} 
+                                    className="w-12 h-10 p-1 cursor-pointer rounded-md border border-input"
+                                    value={color}
+                                    onChange={(e) => setColor(e.target.value)}
+                                    disabled={isPending}
                                 />
-                                <Input 
-                                    name="primary_color_text" 
-                                    defaultValue={org?.primary_color || "#18181b"}
-                                    disabled
-                                    className="flex-1"
+                                {/* Text input for manual hex entry */}
+                                <Input
+                                    value={color}
+                                    onChange={(e) => {
+                                        const v = e.target.value;
+                                        setColor(v);
+                                        // Sync picker only when value is a valid full hex
+                                        if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v);
+                                    }}
+                                    placeholder="#18181b"
+                                    disabled={isPending}
+                                    className="flex-1 font-mono"
                                 />
                             </div>
-                             {!state.success && state.validationErrors?.primary_color && (
-                                <p className="text-sm text-destructive">{state.validationErrors.primary_color[0]}</p>
+                            {/* Hidden input carries the final value to the server action */}
+                            <input type="hidden" name="primary_color" value={color} />
+                            {!state.success && state.validationErrors?.primary_color && (
+                                <FormFieldError message={state.validationErrors.primary_color[0]} />
                             )}
                         </div>
 
@@ -112,7 +129,7 @@ export default function SettingsPage() {
                             />
 
                              {!state.success && state.validationErrors?.logo_url && (
-                                <p className="text-sm text-destructive">{state.validationErrors.logo_url[0]}</p>
+                                <FormFieldError message={state.validationErrors.logo_url[0]} />
                             )}
                         </div>
 
