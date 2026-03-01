@@ -769,7 +769,7 @@ export type Database = {
       client_status: "prospect" | "active" | "archived"
       file_status: "pending" | "uploaded" | "error"
       invitation_status: "pending" | "accepted" | "expired" | "revoked"
-      plan_status: "active" | "trialing" | "past_due" | "canceled" | "paused"
+      plan_status: "active" | "trialing" | "past_due" | "canceled" | "paused" | "expired"
       plan_tier: "trial" | "pro" | "enterprise" | "demo"
       subscription_status:
         | "active"

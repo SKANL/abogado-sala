@@ -95,6 +95,11 @@ export function AppSidebar() {
                     Pago Pendiente
                   </Badge>
                 )}
+                {organization.plan_status === 'expired' && (
+                  <Badge variant="destructive" className="text-[10px] font-bold uppercase tracking-wider">
+                    Trial Expirado
+                  </Badge>
+                )}
               </>
             )}
          </div>

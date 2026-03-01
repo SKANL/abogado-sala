@@ -67,17 +67,11 @@ export async function getSubscriptionAction(): Promise<Result<any>> {
         return handleError(error);
     }
 
-    // Determine effective status (logic for trial expiration vs active)
-    let effectiveStatus = org.plan_status;
-    if (org.plan_status === 'trialing' && org.trial_ends_at && new Date(org.trial_ends_at) < new Date()) {
-        effectiveStatus = 'canceled'; // Or 'expired'
-    }
-
     return { 
         success: true, 
         data: {
             ...org,
-            status: effectiveStatus
+            status: org.plan_status
         }
     };
 }

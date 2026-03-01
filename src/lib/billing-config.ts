@@ -44,7 +44,6 @@ export const PLAN_STATUS_LABELS: Record<string, { label: string; description: st
   trialing:  { label: "Período de Prueba", description: "Estás en tu período de prueba gratuito." },
   past_due:  { label: "Pago Pendiente",    description: "Hay un pago pendiente. Contáctanos para regularizar." },
   canceled:  { label: "Cancelado",         description: "Tu suscripción fue cancelada." },
-  unpaid:    { label: "Sin Pagar",         description: "No se ha recibido pago. Contáctanos para activar." },
-  // Computed locally when trial_ends_at has passed but plan_status is still "trialing" in DB
+  paused:    { label: "Pausado",           description: "Tu cuenta está pausada. Contáctanos para reactivarla." },
   expired:   { label: "Prueba Expirada",   description: "Tu período de prueba ha finalizado. Contáctanos para activar tu plan." },
 };

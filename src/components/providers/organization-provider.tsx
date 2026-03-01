@@ -16,10 +16,11 @@ interface Organization {
     slug: string;
     // Extensible role system — future roles (paralegal, secretary, accountant) slot in here.
     role: "owner" | "admin" | "member";
-    plan_tier: "free" | "pro" | "enterprise" | "trial" | "basic";
-    // "expired" is a computed status (not stored in DB) injected by getOrganizationDetailsAction
-    // when plan_status = "trialing" but trial_ends_at has passed.
-    plan_status: "active" | "trialing" | "past_due" | "canceled" | "unpaid" | "expired";
+    plan_tier: "free" | "pro" | "enterprise" | "trial" | "basic" | "demo";
+    // Mirrors the plan_status DB enum exactly. 'expired' is set automatically
+    // by the nightly pg_cron job (expire_trialing_organizations) or self-healed
+    // inline by the check_org_quotas trigger when a trialing org makes a write.
+    plan_status: "active" | "trialing" | "past_due" | "canceled" | "paused" | "expired";
     trial_ends_at?: string;
     primary_color?: string | null;
     logo_url?: string | null;
@@ -118,8 +119,8 @@ export function OrganizationProvider({
     const isBillingPage = pathname.startsWith("/configuracion");
     const isLocked =
         organization.plan_status === "canceled" ||
-        organization.plan_status === "unpaid" ||
-        organization.plan_status === "expired" ||
+        organization.plan_status === "paused"   ||
+        organization.plan_status === "expired"  ||
         // past_due blocks only when explicitly configured (BLOCK_ON_PAST_DUE = true).
         // Keep false for manual-billing grace periods; flip to true when using Stripe retries.
         (BLOCK_ON_PAST_DUE && organization.plan_status === "past_due");
