@@ -711,6 +711,18 @@ export type Database = {
         Returns: undefined
       }
       get_case_by_token: { Args: { p_token: string }; Returns: Json }
+      get_org_members_with_email: {
+        Args: { p_org_id: string }
+        Returns: {
+          id: string
+          full_name: string | null
+          avatar_url: string | null
+          role: string
+          status: string
+          email: string | null
+          created_at: string
+        }[]
+      }
       get_invitation: {
         Args: { p_token: string }
         Returns: {
