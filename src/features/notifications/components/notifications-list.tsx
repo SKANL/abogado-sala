@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bell, CheckCheck } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -106,12 +107,25 @@ export function NotificationsList({ isSheet }: NotificationsListProps) {
 
 export function NotificationTrigger() {
     const { unreadCount } = useNotifications();
+    const prevCountRef = React.useRef(unreadCount);
+    const [isBouncing, setIsBouncing] = React.useState(false);
+
+    React.useEffect(() => {
+        if (unreadCount > prevCountRef.current) {
+            setIsBouncing(true);
+            const t = setTimeout(() => setIsBouncing(false), 1000);
+            return () => clearTimeout(t);
+        }
+        prevCountRef.current = unreadCount;
+    }, [unreadCount]);
 
     return (
         <div className="relative cursor-pointer p-1">
             <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
             {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
+                <span
+                    className={`absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background transition-transform ${isBouncing ? "animate-bounce" : ""}`}
+                >
                     {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
             )}

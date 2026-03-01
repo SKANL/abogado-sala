@@ -40,11 +40,22 @@ export async function updateSession(request: NextRequest) {
   // Route Protection Logic
   const path = request.nextUrl.pathname;
 
-  // 1. Dashboard Protection
-  if (path.startsWith("/dashboard") || path.startsWith("/clientes") || path.startsWith("/casos") || path.startsWith("/equipo")) {
-      if (!user) {
-          return NextResponse.redirect(new URL("/login", request.url));
-      }
+  // 1. Dashboard Protection — ALL authenticated sections
+  const protectedPrefixes = [
+    "/dashboard",
+    "/clientes",
+    "/casos",
+    "/equipo",
+    "/plantillas",
+    "/ajustes",
+    "/perfil",
+    "/configuracion",
+    "/facturacion",
+  ];
+  const isProtected = protectedPrefixes.some((p) => path.startsWith(p));
+
+  if (isProtected && !user) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // 2. Auth Page Redirection (if already logged in)
@@ -52,6 +63,23 @@ export async function updateSession(request: NextRequest) {
       if (user) {
           return NextResponse.redirect(new URL("/dashboard", request.url));
       }
+  }
+
+  // 3. Role-based Protection — Owner/Admin only routes
+  // These routes are not useful (and can be confusing) for regular lawyer members.
+  // Roles are read from the JWT app_metadata — no extra DB round-trip needed.
+  // Future roles (paralegal, secretary, accountant) should be added to the member
+  // list below until they receive explicit access to specific owner routes.
+  const ownerOnlyPrefixes = ["/equipo", "/plantillas", "/ajustes", "/configuracion"];
+  const isOwnerOnly = ownerOnlyPrefixes.some((p) => path.startsWith(p));
+
+  if (isOwnerOnly && user) {
+    const role = user.app_metadata?.role as string | undefined;
+    // Only "owner" and "admin" can access these routes.
+    // "member" (lawyers and future employee roles) are redirected to their dashboard.
+    if (role === "member") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   return response;

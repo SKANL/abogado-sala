@@ -1,3 +1,5 @@
+import { Logo } from "@/components/common/logo";
+
 export default function AuthLayout({
   children,
 }: {
@@ -8,9 +10,7 @@ export default function AuthLayout({
       <div className="w-full max-w-sm space-y-4">
         {/* Brand Header */}
         <div className="flex flex-col items-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-xl shadow-md">
-              AS
-            </div>
+            <Logo variant="icon" size="lg" />
             <div className="text-center">
               <span className="text-2xl font-bold tracking-tight text-foreground">AbogadoSala</span>
               <p className="text-sm text-muted-foreground mt-0.5">Gestión legal profesional</p>

@@ -14,6 +14,7 @@ import { Info, Lock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { WIZARD_STEPS_METADATA, getWizardProgress } from "@/features/portal/config";
 
 interface PortalWizardProps {
   token: string;
@@ -35,16 +36,8 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
   // 4 -> Done
   const [currentStep, setCurrentStep] = useState(initialCaseData.current_step_index || 0);
 
-  const stepsMetadata = [
-    { title: "Bienvenida", description: "Inicio" },
-    { title: "Consentimiento", description: "Términos Legales" },
-    { title: "Información", description: "Datos Básicos" },
-    { title: "Documentación", description: "Carga de Archivos" },
-    { title: "Finalizado", description: "Revisión" },
-  ];
-
-  const totalSteps = stepsMetadata.length - 1; 
-  const progress = (currentStep / totalSteps) * 100;
+  const stepsMetadata = WIZARD_STEPS_METADATA;
+  const progress = getWizardProgress(currentStep);
 
   const handleStepComplete = async (nextStep: number) => {
     // Optimistic update
@@ -113,8 +106,8 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
         <Progress value={progress} className="h-2" />
       </div>
 
-      {/* Step Content */}
-      <div className="mt-8">
+      {/* Step Content — animated transition on step change */}
+      <div key={currentStep} className="mt-8 animate-in fade-in slide-in-from-right-4 duration-200">
         {currentStep === 0 && (
           <WelcomeStep 
             clientName={clientName} 
@@ -165,7 +158,19 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
                 )}
              </div>
 
-             <div className="flex justify-end pt-6">
+             <div className="flex items-center justify-between pt-6">
+                {hasFileRequirements ? (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                      {files.filter((f: any) => f.status === 'uploaded' || f.status === 'exception').length}
+                    </span>
+                    {" "}/{" "}
+                    <span className="font-medium text-foreground">{files.length}</span>
+                    {" "}documentos subidos
+                  </p>
+                ) : (
+                  <span />
+                )}
                 <Button 
                     onClick={() => handleStepComplete(4)}
                     disabled={hasFileRequirements && !areAllFilesUploaded}

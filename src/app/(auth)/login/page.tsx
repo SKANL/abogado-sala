@@ -12,12 +12,22 @@ import { Result } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { FormFieldError } from "@/components/ui/form-field-error";
+import { useSearchParams } from "next/navigation";
 
 const initialState: Result<void> = { success: false, error: "" };
 
 export default function LoginPage() {
   const [state, action, isPending] = useActionState(loginAction, initialState);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Translate well-known error codes from redirect params into user-friendly messages.
+  const errorParam = searchParams.get("error");
+  const PARAM_ERROR_MESSAGES: Record<string, string> = {
+    "invitacion-invalida": "El enlace de invitación es inválido o ya fue utilizado. Pide al administrador que genere uno nuevo.",
+    "sesion-expirada":      "Tu sesión ha expirado. Por favor inicia sesión de nuevo.",
+  };
+  const paramErrorMessage = errorParam ? (PARAM_ERROR_MESSAGES[errorParam] ?? "Ha ocurrido un error. Intenta de nuevo.") : null;
 
   useEffect(() => {
     if (state.success) {
@@ -69,6 +79,12 @@ export default function LoginPage() {
           {!state.success && state.error && (
             <div className="p-3 text-sm font-medium text-destructive bg-destructive/10 rounded-md">
               {state.error}
+            </div>
+          )}
+          {/* Errors from redirect params (e.g. invalid invitation, expired session) */}
+          {paramErrorMessage && !state.error && (
+            <div className="p-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800">
+              {paramErrorMessage}
             </div>
           )}
         </CardContent>

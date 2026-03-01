@@ -35,7 +35,7 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
         supabase.from("case_files").select("*", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("organizations").select("storage_used, plan_tier").eq("id", orgId).single(),
         supabase.from("profiles")
-            .select("id, full_name, avatar_url, role, last_sign_in_at, cases!cases_assigned_lawyer_id_fkey(count)")
+            .select("id, full_name, avatar_url, role, updated_at, cases!cases_assigned_lawyer_id_fkey(count)")
             .eq("org_id", orgId),
         supabase.from("audit_logs")
             .select("id, action, created_at, metadata, actor_id")
@@ -70,7 +70,7 @@ export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
         avatar_url: p.avatar_url,
         role: p.role,
         active_cases: p.cases?.[0]?.count || 0,
-        last_active: p.last_sign_in_at
+        last_active: p.updated_at  // updated_at serves as a proxy for last activity
     }));
 
     // Process Case Distribution

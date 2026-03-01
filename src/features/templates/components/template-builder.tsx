@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './sortable-item';
@@ -70,6 +70,26 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
   const [fields, setFields] = useState<TemplateField[]>(initialFields);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const isMounted = useRef(false);
+
+  // Mark dirty on any change after initial mount
+  useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
+    setIsDirty(true);
+  }, [title, scope, fields]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -137,6 +157,7 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
     const result = await action(null, formData);
 
     if (result.success) {
+        setIsDirty(false);
         toast.success(isEditing ? "Plantilla actualizada" : "Plantilla creada");
         router.push("/plantillas");
         router.refresh();

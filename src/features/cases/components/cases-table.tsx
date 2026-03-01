@@ -18,18 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { STATUS_LABELS } from "@/lib/constants";
+import { STATUS_LABELS, STATUS_CLASSES } from "@/lib/constants";
 import { Search, FolderOpen, FileStack, Settings2, X, Copy, Check } from "lucide-react";
 import Link from "next/link";
-
-const WIZARD_TOTAL_STEPS = 4;
-const STEP_NAMES: Record<number, string> = {
-  0: "Bienvenida",
-  1: "Consentimiento",
-  2: "Información",
-  3: "Documentación",
-  4: "Finalizado",
-};
+import { getStepName, getWizardProgress } from "@/features/portal/config";
 
 function CopyableToken({ token }: { token?: string }) {
   const [copied, setCopied] = useState(false);
@@ -83,20 +75,26 @@ function getClientName(c: CaseRow): string {
   return "Cliente Desconocido";
 }
 
+// Status filter options specific to the cases domain
+const CASE_FILTER_STATUSES = ["draft", "in_progress", "review", "completed", "archived"] as const;
+
 export function CasesTable({ cases }: CasesTableProps) {
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const router = useRouter();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return cases;
-    return cases.filter(
-      (c) =>
+    return cases.filter((c) => {
+      if (statusFilter && c.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
         getClientName(c).toLowerCase().includes(q) ||
         c.token?.toLowerCase().includes(q) ||
         (STATUS_LABELS[c.status] ?? c.status).toLowerCase().includes(q)
-    );
-  }, [cases, query]);
+      );
+    });
+  }, [cases, query, statusFilter]);
 
   return (
     <div className="space-y-3">
@@ -127,6 +125,35 @@ export function CasesTable({ cases }: CasesTableProps) {
             {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para &ldquo;{query}&rdquo;
           </p>
         )}
+      </div>
+
+      {/* Status filter chips */}
+      <div className="flex flex-wrap gap-2 px-4 md:px-5">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(null)}
+          className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+            statusFilter === null
+              ? "bg-foreground text-background border-foreground"
+              : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+          }`}
+        >
+          Todos
+        </button>
+        {CASE_FILTER_STATUSES.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === s ? null : s)}
+            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+              statusFilter === s
+                ? STATUS_CLASSES[s] + " font-semibold"
+                : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+            }`}
+          >
+            {STATUS_LABELS[s] ?? s}
+          </button>
+        ))}
       </div>
 
       {/* Desktop Table */}
@@ -160,8 +187,8 @@ export function CasesTable({ cases }: CasesTableProps) {
             )}
             {filtered.map((c) => {
               const stepIdx = c.current_step_index ?? 0;
-              const progressPct = Math.round((stepIdx / WIZARD_TOTAL_STEPS) * 100);
-              const stepName = STEP_NAMES[stepIdx] ?? `Paso ${stepIdx}`;
+              const progressPct = getWizardProgress(stepIdx);
+              const stepName = getStepName(stepIdx);
               return (
                 <TableRow
                   key={c.id}
@@ -246,8 +273,7 @@ export function CasesTable({ cases }: CasesTableProps) {
               </div>
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs text-muted-foreground">
-                  Paso actual:{" "}
-                  <span className="font-medium text-foreground">{c.current_step_index}</span>
+                  <span className="font-medium text-foreground">{getStepName(c.current_step_index ?? 0)}</span>
                 </div>
                 <Button variant="secondary" size="sm" className="h-8 text-xs font-semibold" asChild>
                   <Link href={`/casos/${c.id}`}>Gestionar</Link>

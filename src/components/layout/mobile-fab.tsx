@@ -10,9 +10,12 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import { useOrganization } from "@/components/providers/organization-provider";
 
 export function MobileFab() {
   const router = useRouter();
+  const { organization } = useOrganization();
+  const isOwnerOrAdmin = organization.role === "owner" || organization.role === "admin";
 
   return (
     <div className="fixed bottom-6 right-6 z-50 md:hidden animate-in fade-in slide-in-from-bottom-5 duration-500">
@@ -33,10 +36,12 @@ export function MobileFab() {
             <span>Nuevo Cliente</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/equipo")}>
-            <Mail className="mr-2 h-4 w-4" />
-            <span>Invitar Miembro</span>
-          </DropdownMenuItem>
+          {isOwnerOrAdmin && (
+            <DropdownMenuItem onClick={() => router.push("/equipo")}>
+              <Mail className="mr-2 h-4 w-4" />
+              <span>Invitar Miembro</span>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

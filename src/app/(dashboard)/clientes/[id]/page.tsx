@@ -8,15 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, User, ArrowLeft, FolderOpen, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
-
-const WIZARD_TOTAL_STEPS = 4;
-const STEP_NAMES: Record<number, string> = {
-  0: "Bienvenida",
-  1: "Consentimiento",
-  2: "Información",
-  3: "Documentación",
-  4: "Finalizado",
-};
+import { WIZARD_TOTAL_STEPS, getStepName, getWizardProgress } from "@/features/portal/config";
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
     const supabase = await createClient();
@@ -113,8 +105,8 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
                                 <div className="divide-y">
                                     {cases.map((c) => {
                                         const stepIdx = c.current_step_index ?? 0;
-                                        const progressPct = Math.round((stepIdx / WIZARD_TOTAL_STEPS) * 100);
-                                        const stepName = STEP_NAMES[stepIdx] ?? `Paso ${stepIdx}`;
+                                        const progressPct = getWizardProgress(stepIdx);
+                                        const stepName = getStepName(stepIdx);
                                         return (
                                             <Link
                                                 key={c.id}

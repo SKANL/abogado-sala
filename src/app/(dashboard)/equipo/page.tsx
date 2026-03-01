@@ -5,22 +5,34 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InviteMemberDialog } from "@/features/org/components/invite-member-dialog";
 import { RevokeInvitationButton } from "@/features/org/components/revoke-invitation-button";
+import { InvitationLinkButton } from "@/features/org/components/invitation-link-button";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { UsersRound } from "lucide-react";
+import { STATUS_LABELS } from "@/lib/constants";
+
+// Human-readable labels for org roles.
+// Add new roles here as the system expands (paralegal, secretary, accountant, etc.)
+const ROLE_LABELS: Record<string, string> = {
+  owner:      "Propietario",
+  admin:      "Administrador",
+  member:     "Abogado",
+  // Future roles slot in here:
+  // paralegal: "Paralegal",
+  // secretary: "Secretaria",
+  // accountant: "Contador",
+};
 
 export default async function TeamPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch profiles in the org
-  // We need to know the org_id. 
-  // RLS on 'profiles' allows reading own org members.
-  // We can just filter by org_id if we knew it, or just list all 'profiles' viewable.
-  // Since RLS filters to keys in org, simple select all works.
-  
-  const { data: members } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("full_name");
+  const orgId = user?.app_metadata?.org_id;
+
+  // Use RPC to join profiles + auth.users → gets email without exposing auth.users
+  const { data: members } = orgId
+    ? await supabase.rpc("get_org_members_with_email", { p_org_id: orgId })
+    : { data: [] };
 
   // Fetch pending invitations (if RLS allows, which it should for admins)
   const { data: invitations } = await supabase
@@ -47,6 +59,7 @@ export default async function TeamPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Usuario</TableHead>
+                            <TableHead className="hidden lg:table-cell">Email</TableHead>
                             <TableHead>Rol</TableHead>
                             <TableHead>Estado</TableHead>
                         </TableRow>
@@ -66,14 +79,17 @@ export default async function TeamPage() {
                                         </div>
                                     </div>
                                 </TableCell>
+                                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                                    {member.email ?? "—"}
+                                </TableCell>
                                 <TableCell>
                                     <Badge variant="outline" className="capitalize">
-                                        {member.role === 'admin' ? 'Administrador' : 'Miembro'}
+                                        {ROLE_LABELS[member.role] ?? member.role}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant={member.status === 'active' ? 'default' : 'destructive'} className="capitalize">
-                                        {member.status}
+                                    <Badge variant={member.status === 'active' ? 'default' : 'destructive'}>
+                                        {STATUS_LABELS[member.status] ?? member.status}
                                     </Badge>
                                 </TableCell>
                             </TableRow>
@@ -94,16 +110,19 @@ export default async function TeamPage() {
                                 </Avatar>
                                 <div>
                                     <div className="font-semibold">{member.full_name}</div>
-                                    <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                                    <div className="text-xs text-muted-foreground flex flex-col gap-0.5 mt-0.5">
+                                        {member.email && <span className="truncate">{member.email}</span>}
+                                        <div className="flex items-center gap-2">
                                         <Badge variant="outline" className="capitalize text-[10px] h-4">
-                                            {member.role === 'admin' ? 'Admin' : 'Miembro'}
+                                            {ROLE_LABELS[member.role] ?? member.role}
                                         </Badge>
                                         {member.id === user?.id && <span>(Tú)</span>}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <Badge variant={member.status === 'active' ? 'default' : 'destructive'} className="capitalize h-6 text-xs">
-                                {member.status}
+                            <Badge variant={member.status === 'active' ? 'default' : 'destructive'} className="h-6 text-xs">
+                                {STATUS_LABELS[member.status] ?? member.status}
                             </Badge>
                         </CardContent>
                     </Card>
@@ -127,6 +146,7 @@ export default async function TeamPage() {
                                     <TableHead>Email</TableHead>
                                     <TableHead>Rol Invitado</TableHead>
                                     <TableHead>Enviado</TableHead>
+                                    <TableHead>Enlace</TableHead>
                                     <TableHead className="w-24">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -134,8 +154,11 @@ export default async function TeamPage() {
                                 {invitations.map((inv) => (
                                     <TableRow key={inv.id}>
                                         <TableCell>{inv.email}</TableCell>
-                                        <TableCell className="capitalize">{inv.role}</TableCell>
+                                        <TableCell className="capitalize">{ROLE_LABELS[inv.role] ?? inv.role}</TableCell>
                                         <TableCell>{new Date(inv.created_at).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <InvitationLinkButton token={inv.token} />
+                                        </TableCell>
                                         <TableCell>
                                             <RevokeInvitationButton invitationId={inv.id} email={inv.email} />
                                         </TableCell>
@@ -156,7 +179,7 @@ export default async function TeamPage() {
                                    </div>
                                    <div className="flex items-center justify-between text-xs mt-1">
                                        <Badge variant="outline" className="capitalize text-[10px] h-4">
-                                           {inv.role}
+                                           {ROLE_LABELS[inv.role] ?? inv.role}
                                        </Badge>
                                        <span className="text-muted-foreground">{new Date(inv.created_at).toLocaleDateString()}</span>
                                    </div>

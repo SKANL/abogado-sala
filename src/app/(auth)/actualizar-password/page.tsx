@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { updatePasswordAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,20 @@ export default function UpdatePasswordPage() {
     updatePasswordAction,
     initialState
   );
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const router = useRouter();
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const form = e.currentTarget;
+    const pwd = (form.elements.namedItem("password") as HTMLInputElement)?.value ?? "";
+    const confirm = (form.elements.namedItem("confirm_password") as HTMLInputElement)?.value ?? "";
+    if (pwd !== confirm) {
+      e.preventDefault();
+      setConfirmError("Las contraseñas no coinciden");
+    } else {
+      setConfirmError(null);
+    }
+  };
 
   useEffect(() => {
     if (state.success) {
@@ -65,7 +78,7 @@ export default function UpdatePasswordPage() {
           Elige una contraseña segura para tu cuenta.
         </CardDescription>
       </CardHeader>
-      <form action={action}>
+      <form action={action} onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="password">Nueva contraseña</Label>
@@ -90,6 +103,21 @@ export default function UpdatePasswordPage() {
               disabled={isPending}
               placeholder="Repite tu contraseña"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm_password">Confirmar contraseña</Label>
+            <Input
+              id="confirm_password"
+              name="confirm_password"
+              type="password"
+              required
+              minLength={6}
+              disabled={isPending}
+              placeholder="Repite tu contraseña"
+            />
+            {confirmError && (
+              <p className="text-sm font-medium text-destructive">{confirmError}</p>
+            )}
           </div>
           {state.error && (
             <Alert variant="destructive">

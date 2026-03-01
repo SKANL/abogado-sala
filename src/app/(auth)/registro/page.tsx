@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { signupWithOrgAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,20 @@ const initialState: Result<void> = { success: false, error: "" };
 
 export default function RegisterPage() {
   const [state, action, isPending] = useActionState(signupWithOrgAction, initialState);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const router = useRouter();
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const form = e.currentTarget;
+    const password = (form.elements.namedItem("password") as HTMLInputElement)?.value ?? "";
+    const confirm = (form.elements.namedItem("confirm_password") as HTMLInputElement)?.value ?? "";
+    if (password !== confirm) {
+      e.preventDefault();
+      setConfirmError("Las contraseñas no coinciden");
+    } else {
+      setConfirmError(null);
+    }
+  };
 
   // Try to redirect to dashboard on success - if email confirmation is off, user is already logged in.
   // If confirmation is required, middleware will redirect them to login.
@@ -57,7 +70,7 @@ export default function RegisterPage() {
           Prueba Abogado Sala gratis por 14 días. No se requiere tarjeta de crédito.
         </CardDescription>
       </CardHeader>
-      <form action={action}>
+      <form action={action} onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="full_name">Nombre Completo</Label>
@@ -106,6 +119,20 @@ export default function RegisterPage() {
               disabled={isPending}
             />
             <FormFieldError message={state?.validationErrors?.password?.[0]} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm_password">Confirmar Contraseña</Label>
+            <Input
+              id="confirm_password"
+              name="confirm_password"
+              type="password"
+              required
+              minLength={6}
+              disabled={isPending}
+              placeholder="Repite tu contraseña"
+            />
+            <FormFieldError message={confirmError} />
           </div>
           
           {state?.error && (

@@ -3,14 +3,23 @@
 
 import { createContext, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { AlertTriangle, Mail } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/common/logo";
+import { BILLING_MODE, BILLING_CONTACT, BLOCK_ON_PAST_DUE } from "@/lib/billing-config";
+import Link from "next/link";
 
 interface Organization {
     id: string;
     name: string;
     slug: string;
-    role: "owner" | "admin" | "member"; // Current user's role in org
+    // Extensible role system — future roles (paralegal, secretary, accountant) slot in here.
+    role: "owner" | "admin" | "member";
     plan_tier: "free" | "pro" | "enterprise" | "trial" | "basic";
-    plan_status: "active" | "trialing" | "past_due" | "canceled" | "unpaid";
+    // "expired" is a computed status (not stored in DB) injected by getOrganizationDetailsAction
+    // when plan_status = "trialing" but trial_ends_at has passed.
+    plan_status: "active" | "trialing" | "past_due" | "canceled" | "unpaid" | "expired";
     trial_ends_at?: string;
 }
 
@@ -20,48 +29,101 @@ interface OrganizationContextType {
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
-export function OrganizationProvider({ 
-    organization, 
-    children 
-}: { 
-    organization: Organization; 
-    children: React.ReactNode 
-}) {
+/** Payment wall shown when the org subscription is locked (canceled/unpaid). */
+function PaymentWall({ organization }: { organization: Organization }) {
     const router = useRouter();
+    const isOwner = organization.role === "owner";
+
+    return (
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background p-4">
+            <div className="w-full max-w-md space-y-6">
+                {/* Branding */}
+                <div className="flex justify-center">
+                    <Logo variant="full" size="default" />
+                </div>
+
+                <Card className="border-destructive/30 bg-destructive/5">
+                    <CardHeader className="text-center pb-3">
+                        <div className="flex justify-center mb-3">
+                            <div className="rounded-full bg-destructive/10 p-3">
+                                <AlertTriangle className="w-8 h-8 text-destructive" />
+                            </div>
+                        </div>
+                        <CardTitle className="text-xl">
+                            {organization.plan_status === "expired"
+                                ? "Período de Prueba Finalizado"
+                                : "Suscripción Suspendida"}
+                        </CardTitle>
+                        <CardDescription>
+                            {organization.plan_status === "expired" ? (
+                                <>Tu período de prueba gratuito de <strong className="text-foreground">{organization.name}</strong> ha finalizado.</>
+                            ) : (
+                                <>La cuenta de <strong className="text-foreground">{organization.name}</strong> tiene pagos pendientes o ha expirado.</>
+                            )}
+                        </CardDescription>
+                    </CardHeader>
+
+                    <CardContent>
+                        {isOwner ? (
+                            <p className="text-sm text-muted-foreground text-center">
+                                {organization.plan_status === "expired"
+                                    ? "Tu período de prueba ha concluido. Contáctanos para activar tu plan y continuar usando el despacho."
+                                    : "Como propietario, puedes regularizar el pago para restablecer el acceso a todos los miembros del despacho."}
+                            </p>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center">
+                                Contacta al administrador del despacho para que regularice el pago y restablecer el acceso.
+                            </p>
+                        )}
+                    </CardContent>
+
+                    <CardFooter className="flex-col gap-3">
+                        {isOwner && (
+                            <>
+                                {/* Always show billing page link for owner */}
+                                <Button className="w-full" onClick={() => router.push("/configuracion/facturacion")}>
+                                    Ir a Facturación
+                                </Button>
+
+                                {/* Manual billing: show contact buttons */}
+                                {BILLING_MODE === "manual" && BILLING_CONTACT.email && (
+                                    <Button asChild variant="outline" className="w-full">
+                                        <Link href={`mailto:${BILLING_CONTACT.email}?subject=Reactivar%20cuenta%20${encodeURIComponent(organization.name)}`}>
+                                            <Mail className="w-4 h-4 mr-2" />
+                                            Contactar soporte
+                                        </Link>
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
+    );
+}
+
+export function OrganizationProvider({
+    organization,
+    children,
+}: {
+    organization: Organization;
+    children: React.ReactNode;
+}) {
     const pathname = usePathname();
 
-    // BILLING ENFORCEMENT LOGIC
-    // If status is canceled/unpaid, BLOCK ACCESS to everything except billing page.
-    const isBillingPage = pathname.startsWith("/configuracion/facturacion");
-    const isLocked = organization.plan_status === "canceled" || organization.plan_status === "unpaid";
+    // BILLING ENFORCEMENT: block all routes except the billing config page
+    const isBillingPage = pathname.startsWith("/configuracion");
+    const isLocked =
+        organization.plan_status === "canceled" ||
+        organization.plan_status === "unpaid" ||
+        organization.plan_status === "expired" ||
+        // past_due blocks only when explicitly configured (BLOCK_ON_PAST_DUE = true).
+        // Keep false for manual-billing grace periods; flip to true when using Stripe retries.
+        (BLOCK_ON_PAST_DUE && organization.plan_status === "past_due");
 
     if (isLocked && !isBillingPage) {
-         // Force redirect or render "Payment Wall"
-         // Rendering a wall is better UX than a redirect loop
-         return (
-             <div className="h-screen w-full flex flex-col items-center justify-center bg-background p-4 text-center space-y-4">
-                 <div className="rounded-full bg-red-100 p-3">
-                     <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                 </div>
-                 <h1 className="text-2xl font-bold">Suscripción Suspendida</h1>
-                 <p className="text-muted-foreground max-w-md">
-                     La suscripción de <strong>{organization.name}</strong> ha expirado o tiene pagos pendientes.
-                     Para continuar operando, el propietario debe actualizar el método de pago.
-                 </p>
-                 {organization.role === 'owner' ? (
-                     <button 
-                        onClick={() => router.push("/configuracion/facturacion")}
-                        className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90"
-                     >
-                        Ir a Facturación
-                     </button>
-                 ) : (
-                     <p className="text-sm bg-muted p-2 rounded">
-                        Contacta al administrador del despacho.
-                     </p>
-                 )}
-             </div>
-         );
+        return <PaymentWall organization={organization} />;
     }
 
     return (

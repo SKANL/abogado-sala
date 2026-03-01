@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FormFieldError } from "@/components/ui/form-field-error";
+import { ImageUploader } from "@/components/common/image-uploader";
 
 const initialState: Result<any> = { success: false, error: "" };
 
@@ -61,7 +62,7 @@ export default function ProfilePage() {
                         </Avatar>
                         <div>
                             <p className="text-sm font-medium">Foto de Perfil</p>
-                            <p className="text-xs text-muted-foreground">Gestionada vía URL por ahora.</p>
+                            <p className="text-xs text-muted-foreground">JPG o PNG, máximo 5MB.</p>
                         </div>
                     </div>
 
@@ -91,13 +92,28 @@ export default function ProfilePage() {
                         </div>
                         
                          <div className="space-y-2">
-                            <Label htmlFor="avatar_url">URL Avatar</Label>
-                            <Input 
-                                id="avatar_url" 
-                                name="avatar_url" 
-                                defaultValue={user?.user_metadata?.avatar_url || ""} 
-                                placeholder="https://..."
-                                disabled={isPending} 
+                            <Label>Foto de Perfil</Label>
+                            {/* Hidden input consumed by updateProfileAction */}
+                            <input
+                                type="hidden"
+                                name="avatar_url"
+                                id="hidden-avatar-url"
+                                defaultValue={user?.user_metadata?.avatar_url || ""}
+                            />
+                            <ImageUploader
+                                bucket="user-avatars"
+                                folderPath={user?.id}
+                                defaultUrl={user?.user_metadata?.avatar_url}
+                                aspectRatio="square"
+                                className="max-w-40"
+                                onUploadComplete={(url) => {
+                                    const input = document.getElementById("hidden-avatar-url") as HTMLInputElement;
+                                    if (input) input.value = url;
+                                }}
+                                onRemove={() => {
+                                    const input = document.getElementById("hidden-avatar-url") as HTMLInputElement;
+                                    if (input) input.value = "";
+                                }}
                             />
                         </div>
 

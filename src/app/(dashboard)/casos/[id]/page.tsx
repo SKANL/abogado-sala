@@ -12,15 +12,7 @@ import { CaseActionsDropdown } from "@/features/cases/components/case-actions-me
 import { CaseFilesList } from "@/features/cases/components/case-files-list";
 import { CaseRealtimeListener } from "@/features/cases/components/case-realtime-listener";
 import { CaseStatusSelector } from "@/features/cases/components/case-status-selector";
-
-const WIZARD_TOTAL_STEPS = 4;
-const STEP_NAMES: Record<number, string> = {
-  0: "Bienvenida",
-  1: "Consentimiento",
-  2: "Información",
-  3: "Documentación",
-  4: "Finalizado",
-};
+import { WIZARD_TOTAL_STEPS, getStepName, getWizardProgress } from "@/features/portal/config";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -43,8 +35,8 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   // Calculate URL for client portal
   const portalUrl = `/sala/${c.token}`;
   const stepIdx = c.current_step_index ?? 0;
-  const progressPct = Math.round((stepIdx / WIZARD_TOTAL_STEPS) * 100);
-  const stepName = STEP_NAMES[stepIdx] ?? `Paso ${stepIdx}`;
+  const progressPct = getWizardProgress(stepIdx);
+  const stepName = getStepName(stepIdx);
 
   return (
     <div className="space-y-6">
@@ -63,7 +55,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                     <h1 className="text-2xl font-bold tracking-tight">Expediente {c.client?.full_name}</h1>
                     <CaseStatusSelector caseId={c.id} currentStatus={c.status} />
                 </div>
-                <p className="text-muted-foreground font-mono text-sm">
+                <p className="text-muted-foreground font-mono text-sm break-all">
                     ID: {c.id}
                 </p>
             </div>

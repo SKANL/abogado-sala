@@ -21,48 +21,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/providers/auth-provider";
-import { Home, Users, UsersRound, Briefcase, Settings, LogOut, FileText, ChevronUp } from "lucide-react";
+import { Home, Users, UsersRound, Briefcase, Settings, LogOut, FileText, ChevronUp, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/features/auth/actions";
 
-const items = [
-  {
-    title: "Inicio",
-    url: "/dashboard",
-    icon: Home,
-    exact: true,
-  },
-  {
-    title: "Clientes",
-    url: "/clientes",
-    icon: Users,
-    exact: false,
-  },
-  {
-    title: "Expedientes",
-    url: "/casos",
-    icon: Briefcase,
-    exact: false,
-  },
-  {
-    title: "Equipo",
-    url: "/equipo",
-    icon: UsersRound,   // Distinct from Clientes (Users)
-    exact: false,
-  },
-  // {
-  //   title: "Ajustes",
-  //   url: "/ajustes",
-  //   icon: Settings,
-  //   exact: false,
-  // },
-  {
-    title: "Plantillas",
-    url: "/plantillas",
-    icon: FileText,
-    exact: false,
-  },
+/** Items visible to every role */
+const baseItems = [
+  { title: "Inicio", url: "/dashboard", icon: Home, exact: true },
+  { title: "Expedientes", url: "/casos", icon: Briefcase, exact: false },
+];
+
+/** Owner/admin-only items */
+const ownerItems = [
+  { title: "Clientes", url: "/clientes", icon: Users, exact: false },
+  { title: "Equipo", url: "/equipo", icon: UsersRound, exact: false },
+  { title: "Plantillas", url: "/plantillas", icon: FileText, exact: false },
+];
+
+/** Owner/admin settings nav items */
+const ownerSettingsItems = [
+  { title: "Ajustes", url: "/ajustes", icon: Settings, exact: false },
+  { title: "Facturación", url: "/configuracion/facturacion", icon: CreditCard, exact: false },
+];
+
+/** Member (lawyer) gets read-only client access but not team/template management */
+const memberItems = [
+  { title: "Clientes", url: "/clientes", icon: Users, exact: false },
 ];
 
 import { useOrganization } from "@/components/providers/organization-provider";
@@ -75,6 +60,12 @@ export function AppSidebar() {
 
   const isActive = (url: string, exact = false) =>
     exact ? pathname === url : pathname === url || pathname.startsWith(url + "/");
+
+  const isOwnerOrAdmin = organization.role === "owner" || organization.role === "admin";
+  const items = [
+    ...baseItems,
+    ...(isOwnerOrAdmin ? ownerItems : memberItems),
+  ];
 
   const displayName = user?.user_metadata?.full_name || user?.email || "Usuario";
   const initials = displayName.charAt(0).toUpperCase();
@@ -131,6 +122,29 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {isOwnerOrAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administración</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {ownerSettingsItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url, item.exact)}
+                      className="transition-all duration-150"
+                    >
+                      <Link href={item.url} aria-current={isActive(item.url, item.exact) ? "page" : undefined}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t">
@@ -160,9 +174,11 @@ export function AppSidebar() {
                 <DropdownMenuItem asChild>
                   <Link href="/perfil">Mi Perfil</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/ajustes">Ajustes</Link>
-                </DropdownMenuItem>
+                {isOwnerOrAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/configuracion/facturacion">Facturación</Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => logoutAction()}

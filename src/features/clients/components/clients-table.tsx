@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { STATUS_LABELS } from "@/lib/constants";
+import { STATUS_LABELS, STATUS_CLASSES } from "@/lib/constants";
 import { Search, User, Users, Mail, Phone, ExternalLink, X } from "lucide-react";
 import Link from "next/link";
 
@@ -33,21 +33,27 @@ interface ClientsTableProps {
   clients: ClientRow[];
 }
 
+// Status filter options for clients
+const CLIENT_FILTER_STATUSES = ["active", "prospect", "archived"] as const;
+
 export function ClientsTable({ clients }: ClientsTableProps) {
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const router = useRouter();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter(
-      (c) =>
+    return clients.filter((c) => {
+      if (statusFilter && c.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
         c.full_name.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
         c.phone?.toLowerCase().includes(q) ||
         (STATUS_LABELS[c.status] ?? c.status).toLowerCase().includes(q)
-    );
-  }, [clients, query]);
+      );
+    });
+  }, [clients, query, statusFilter]);
 
   return (
     <div className="space-y-3">
@@ -80,7 +86,34 @@ export function ClientsTable({ clients }: ClientsTableProps) {
         )}
       </div>
 
-      {/* Desktop Table */}
+      {/* Status filter chips */}
+      <div className="flex flex-wrap gap-2 px-4 md:px-5">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(null)}
+          className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+            statusFilter === null
+              ? "bg-foreground text-background border-foreground"
+              : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+          }`}
+        >
+          Todos
+        </button>
+        {CLIENT_FILTER_STATUSES.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === s ? null : s)}
+            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+              statusFilter === s
+                ? STATUS_CLASSES[s] + " font-semibold"
+                : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+            }`}
+          >
+            {STATUS_LABELS[s] ?? s}
+          </button>
+        ))}
+      </div>
       <div className="hidden md:block relative w-full overflow-auto">
         <Table>
           <TableHeader>
