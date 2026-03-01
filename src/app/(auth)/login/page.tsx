@@ -10,30 +10,46 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import Link from "next/link";
 import { Result } from "@/types";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { FormFieldError } from "@/components/ui/form-field-error";
 import { useSearchParams } from "next/navigation";
 
 const initialState: Result<void> = { success: false, error: "" };
 
+const PARAM_ERROR_MESSAGES: Record<string, string> = {
+  "invitacion-invalida": "El enlace de invitación es inválido o ya fue utilizado. Pide al administrador que genere uno nuevo.",
+  "sesion-expirada":      "Tu sesión ha expirado. Por favor inicia sesión de nuevo.",
+};
+
+/** Reads ?error= from the URL. Must be isolated in Suspense because useSearchParams()
+ *  opts the page out of static rendering. */
+function ParamError({ hasActionError }: { hasActionError: boolean }) {
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
+  const paramErrorMessage = errorParam
+    ? (PARAM_ERROR_MESSAGES[errorParam] ?? "Ha ocurrido un error. Intenta de nuevo.")
+    : null;
+
+  if (!paramErrorMessage || hasActionError) return null;
+
+  return (
+    <div className="p-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800">
+      {paramErrorMessage}
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const [state, action, isPending] = useActionState(loginAction, initialState);
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Translate well-known error codes from redirect params into user-friendly messages.
-  const errorParam = searchParams.get("error");
-  const PARAM_ERROR_MESSAGES: Record<string, string> = {
-    "invitacion-invalida": "El enlace de invitación es inválido o ya fue utilizado. Pide al administrador que genere uno nuevo.",
-    "sesion-expirada":      "Tu sesión ha expirado. Por favor inicia sesión de nuevo.",
-  };
-  const paramErrorMessage = errorParam ? (PARAM_ERROR_MESSAGES[errorParam] ?? "Ha ocurrido un error. Intenta de nuevo.") : null;
 
   useEffect(() => {
     if (state.success) {
       router.push("/dashboard");
     }
   }, [state.success, router]);
+
+  const hasActionError = !state.success && !!state.error;
 
   return (
     <Card className="w-full">
@@ -76,17 +92,14 @@ export default function LoginPage() {
             />
             <FormFieldError message={!state.success ? state.validationErrors?.password?.[0] : null} />
           </div>
-          {!state.success && state.error && (
+          {hasActionError && (
             <div className="p-3 text-sm font-medium text-destructive bg-destructive/10 rounded-md">
               {state.error}
             </div>
           )}
-          {/* Errors from redirect params (e.g. invalid invitation, expired session) */}
-          {paramErrorMessage && !(!state.success && state.error) && (
-            <div className="p-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800">
-              {paramErrorMessage}
-            </div>
-          )}
+          <Suspense>
+            <ParamError hasActionError={hasActionError} />
+          </Suspense>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isPending}>
