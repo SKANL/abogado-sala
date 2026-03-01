@@ -82,7 +82,7 @@ export default function LoginPage() {
             </div>
           )}
           {/* Errors from redirect params (e.g. invalid invitation, expired session) */}
-          {paramErrorMessage && !state.error && (
+          {paramErrorMessage && !(!state.success && state.error) && (
             <div className="p-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800">
               {paramErrorMessage}
             </div>
