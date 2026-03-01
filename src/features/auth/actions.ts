@@ -98,14 +98,15 @@ export async function signupWithOrgAction(
       throw orgError;
     }
 
-    // 3. Link Org to Profile & Make Admin
+    // 3. Link Org to Profile & Make Owner
     // The Postgres Trigger `handle_new_user` has already created the profile row.
     // Changing from `upsert` to `update` prevents race condition errors on the primary key constraint.
+    // The founder gets 'owner' — a dedicated role distinct from secondary admins.
     const { error: profileError } = await admin
       .from("profiles")
       .update({
         org_id: org.id,
-        role: "admin",
+        role: "owner",
         status: "active",
         full_name: full_name,
       })

@@ -20,7 +20,7 @@ export async function getOrganizationDetailsAction(): Promise<Result<any>> {
 
     const { data: org, error } = await supabase
         .from("organizations")
-        .select("id, name, slug, plan_tier, plan_status, trial_ends_at")
+        .select("id, name, slug, plan_tier, plan_status, trial_ends_at, primary_color, logo_url")
         .eq("id", orgId)
         .single();
 
@@ -33,7 +33,7 @@ export async function getOrganizationDetailsAction(): Promise<Result<any>> {
     // When billing is manual, a trial can expire without the DB field updating automatically.
     // We compute an effective status here so the PaymentWall renders correctly without
     // requiring a cron job or Stripe webhook to flip the value.
-    let effectivePlanStatus = org.plan_status;
+    let effectivePlanStatus: string = org.plan_status;
     if (
         org.plan_status === "trialing" &&
         org.trial_ends_at &&

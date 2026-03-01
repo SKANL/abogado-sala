@@ -671,6 +671,11 @@ export type Database = {
       app_get_org_id: { Args: never; Returns: string }
       app_is_active: { Args: never; Returns: boolean }
       app_is_admin: { Args: never; Returns: boolean }
+      app_is_owner: { Args: never; Returns: boolean }
+      delete_organization: {
+        Args: { p_org_id: string }
+        Returns: string[]
+      }
       check_rate_limit: {
         Args: {
           p_capacity: number
@@ -775,7 +780,7 @@ export type Database = {
         | "trialing"
         | "unpaid"
       template_scope: "private" | "global"
-      user_role: "admin" | "member"
+      user_role: "owner" | "admin" | "member"
       user_status: "active" | "suspended" | "archived"
     }
     CompositeTypes: {
@@ -920,7 +925,7 @@ export const Constants = {
         "unpaid",
       ],
       template_scope: ["private", "global"],
-      user_role: ["admin", "member"],
+      user_role: ["owner", "admin", "member"],
       user_status: ["active", "suspended", "archived"],
     },
   },

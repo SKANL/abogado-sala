@@ -6,7 +6,8 @@
 --   1. search_path is pinned to 'public' to prevent search_path injection.
 --   2. Caller org is validated via app_get_org_id() — cross-org queries return 0 rows.
 --   3. Only admin/owner role can call this (app_is_admin()); member role access is denied.
---   4. DB user_role enum only has 'admin' | 'member'; 'owner' lives in JWT app_metadata only.
+--   4. 'owner' was added to user_role enum in migration 20260301000001_add_owner_role.sql.
+--      app_is_admin() now returns true for both 'admin' and 'owner'.
 
 create or replace function public.get_org_members_with_email(p_org_id uuid)
 returns table (

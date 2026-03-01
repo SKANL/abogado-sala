@@ -1,174 +1,34 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { ProfileForm } from "@/features/auth/components/profile-form";
 
-import { useActionState, useEffect } from "react";
-import { updateProfileAction, updatePasswordAction } from "@/features/auth/actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Result } from "@/types";
-import { toast } from "sonner";
-import { useAuth } from "@/components/providers/auth-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FormFieldError } from "@/components/ui/form-field-error";
-import { ImageUploader } from "@/components/common/image-uploader";
+export default async function ProfilePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-const initialState: Result<any> = { success: false, error: "" };
+  if (!user) redirect("/login");
 
-export default function ProfilePage() {
-    const { user } = useAuth();
-    const [state, action, isPending] = useActionState(updateProfileAction, initialState);
-    const [pwState, pwAction, isPwPending] = useActionState(updatePasswordAction, initialState);
+  // Fetch profile from DB — source of truth for full_name and avatar_url
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, avatar_url")
+    .eq("id", user.id)
+    .single();
 
-    useEffect(() => {
-        if (state.success) {
-            toast.success("Perfil actualizado correctamente");
-        } else if (state.error) {
-            toast.error(state.error);
-        }
-    }, [state]);
-
-    useEffect(() => {
-        if (pwState.success) {
-            toast.success("Contraseña actualizada correctamente");
-        } else if (pwState.error) {
-            toast.error(pwState.error);
-        }
-    }, [pwState]);
-
-    return (
-        <div className="space-y-4">
-            <div>
-                <h3 className="text-lg font-medium">Mi Perfil</h3>
-                <p className="text-sm text-muted-foreground">
-                    Información personal y de contacto.
-                </p>
-            </div>
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle>Información Personal</CardTitle>
-                    <CardDescription>
-                        Esta información será visible para tu equipo.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <div className="mb-6 flex items-center gap-4">
-                        <Avatar className="h-16 w-16">
-                            <AvatarImage src={user?.user_metadata?.avatar_url} />
-                            <AvatarFallback>
-                                {user?.user_metadata?.full_name?.charAt(0) || "U"}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="text-sm font-medium">Foto de Perfil</p>
-                            <p className="text-xs text-muted-foreground">JPG o PNG, máximo 5MB.</p>
-                        </div>
-                    </div>
-
-                    <form action={action} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="full_name">Nombre Completo</Label>
-                            <Input 
-                                id="full_name" 
-                                name="full_name" 
-                                defaultValue={user?.user_metadata?.full_name} 
-                                disabled={isPending} 
-                            />
-                            {!state.success && state.validationErrors?.full_name && (
-                                <FormFieldError message={state.validationErrors.full_name[0]} />
-                            )}
-                        </div>
-
-                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input 
-                                id="email" 
-                                defaultValue={user?.email} 
-                                disabled 
-                                className="bg-muted"
-                            />
-                             <p className="text-xs text-muted-foreground">El email no se puede cambiar.</p>
-                        </div>
-                        
-                         <div className="space-y-2">
-                            <Label>Foto de Perfil</Label>
-                            {/* Hidden input consumed by updateProfileAction */}
-                            <input
-                                type="hidden"
-                                name="avatar_url"
-                                id="hidden-avatar-url"
-                                defaultValue={user?.user_metadata?.avatar_url || ""}
-                            />
-                            <ImageUploader
-                                bucket="user-avatars"
-                                folderPath={user?.id}
-                                defaultUrl={user?.user_metadata?.avatar_url}
-                                aspectRatio="square"
-                                className="max-w-40"
-                                onUploadComplete={(url) => {
-                                    const input = document.getElementById("hidden-avatar-url") as HTMLInputElement;
-                                    if (input) input.value = url;
-                                }}
-                                onRemove={() => {
-                                    const input = document.getElementById("hidden-avatar-url") as HTMLInputElement;
-                                    if (input) input.value = "";
-                                }}
-                            />
-                        </div>
-
-                        <div className="flex justify-end pt-4">
-                            <Button type="submit" disabled={isPending}>
-                                {isPending ? "Guardando..." : "Guardar Cambios"}
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-
-            {/* Password Change Section */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Cambiar Contraseña</CardTitle>
-                    <CardDescription>
-                        Elige una contraseña segura de al menos 6 caracteres.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form action={pwAction} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Nueva Contraseña</Label>
-                            <Input
-                                id="password"
-                                name="password"
-                                type="password"
-                                placeholder="••••••••"
-                                disabled={isPwPending}
-                                autoComplete="new-password"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="confirm_password">Confirmar Contraseña</Label>
-                            <Input
-                                id="confirm_password"
-                                name="confirm_password"
-                                type="password"
-                                placeholder="••••••••"
-                                disabled={isPwPending}
-                                autoComplete="new-password"
-                            />
-                            {!pwState.success && pwState.error && (
-                                <FormFieldError message={pwState.error} />
-                            )}
-                        </div>
-                        <div className="flex justify-end pt-2">
-                            <Button type="submit" variant="outline" disabled={isPwPending}>
-                                {isPwPending ? "Actualizando..." : "Actualizar Contraseña"}
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-        </div>
-    );
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-medium">Mi Perfil</h3>
+        <p className="text-sm text-muted-foreground">
+          Información personal y de contacto.
+        </p>
+      </div>
+      <ProfileForm
+        userId={user.id}
+        fullName={profile?.full_name ?? user.user_metadata?.full_name ?? null}
+        email={user.email ?? ""}
+        avatarUrl={profile?.avatar_url ?? user.user_metadata?.avatar_url ?? null}
+      />
+    </div>
+  );
 }

@@ -1,97 +1,154 @@
 "use client";
 
-import { useTransition } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { updateOrganizationAction } from "../actions";
+import { updateOrganizationAction } from "@/features/org/actions";
+import { ImageUploader } from "@/components/common/image-uploader";
+import { FormFieldError } from "@/components/ui/form-field-error";
+import { DeleteOrganizationDialog } from "@/features/org/components/delete-organization-dialog";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { Result } from "@/types";
 
-interface OrgSettingsFormProps {
-  initialData: {
-    name: string;
-    slug: string;
-    logo_url?: string | null;
-    primary_color?: string | null;
-  };
+interface Props {
+  orgId: string;
+  orgName: string;
+  primaryColor: string | null;
+  logoUrl: string | null;
+  isOwner: boolean;
 }
 
-export function OrgSettingsForm({ initialData }: OrgSettingsFormProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+const initialState: Result<any> = { success: false, error: "" };
 
-  const handleSubmit = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await updateOrganizationAction(null, formData);
-      if (result.success) {
-        toast.success("Organización actualizada");
-        router.refresh();
-      } else {
-        toast.error("Error al actualizar", { description: result.error });
-      }
-    });
-  };
+export function OrgSettingsForm({ orgId, orgName, primaryColor, logoUrl, isOwner }: Props) {
+  const [state, action, isPending] = useActionState(updateOrganizationAction, initialState);
+  const [color, setColor] = useState<string>(primaryColor || "#18181b");
+
+  useEffect(() => {
+    if (state.success) {
+      toast.success("Organización actualizada correctamente");
+    } else if (!state.success && state.error) {
+      toast.error(state.error);
+    }
+  }, [state]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Configuración del Despacho</CardTitle>
-        <CardDescription>Personaliza la apariencia y datos de tu organización.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre del Despacho</Label>
-            <Input 
-              id="name" 
-              name="name" 
-              defaultValue={initialData.name} 
-              placeholder="Ej. LegalTech Abogados" 
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="primary_color">Color de Marca (Hex)</Label>
-            <div className="flex gap-2">
-              <Input 
-                id="primary_color" 
-                name="primary_color" 
-                defaultValue={initialData.primary_color || "#000000"} 
-                type="color"
-                className="w-12 p-1 h-10" 
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Marca e Identidad</CardTitle>
+          <CardDescription>
+            Personaliza cómo ven tus clientes el portal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={action} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre del Despacho</Label>
+              <Input
+                id="name"
+                name="name"
+                defaultValue={orgName}
+                disabled={isPending}
               />
-              <Input 
-                name="primary_color_text"
-                defaultValue={initialData.primary_color || "#000000"}
-                placeholder="#000000"
-                className="font-mono uppercase"
-              />
+              {!state.success && state.validationErrors?.name && (
+                <FormFieldError message={state.validationErrors.name[0]} />
+              )}
             </div>
-          </div>
-          
-          <div className="space-y-2">
-             <Label htmlFor="logo">Logo (URL)</Label>
-             <Input 
-                id="logo"
-                name="logo"
-                defaultValue={initialData.logo_url || ""}
-                placeholder="https://..."
-             />
-             <p className="text-xs text-muted-foreground">
-                * Por ahora soporta URLs externas. Subida de archivos próximamente.
-             </p>
-          </div>
 
-          <div className="pt-4 flex justify-end">
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Guardando..." : "Guardar Cambios"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            <div className="space-y-2">
+              <Label htmlFor="primary_color_picker">Color Primario (Hex)</Label>
+              <div className="flex gap-2">
+                <input
+                  id="primary_color_picker"
+                  type="color"
+                  className="w-12 h-10 p-1 cursor-pointer rounded-md border border-input"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  disabled={isPending}
+                />
+                <Input
+                  value={color}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setColor(v);
+                    if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v);
+                  }}
+                  placeholder="#18181b"
+                  disabled={isPending}
+                  className="flex-1 font-mono"
+                />
+              </div>
+              <input type="hidden" name="primary_color" value={color} />
+              {!state.success && state.validationErrors?.primary_color && (
+                <FormFieldError message={state.validationErrors.primary_color[0]} />
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <Label>Logo del Despacho</Label>
+              <input
+                type="hidden"
+                name="logo_url"
+                defaultValue={logoUrl || ""}
+                id="hidden-logo-url"
+              />
+              <ImageUploader
+                bucket="organization-assets"
+                folderPath={orgId}
+                defaultUrl={logoUrl}
+                className="w-full"
+                aspectRatio="auto"
+                onUploadComplete={(url) => {
+                  const input = document.getElementById("hidden-logo-url") as HTMLInputElement;
+                  if (input) input.value = url;
+                }}
+                onRemove={() => {
+                  const input = document.getElementById("hidden-logo-url") as HTMLInputElement;
+                  if (input) input.value = "";
+                }}
+              />
+              {!state.success && state.validationErrors?.logo_url && (
+                <FormFieldError message={state.validationErrors.logo_url[0]} />
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* ── Danger Zone ──────────────────────────────────────────── */}
+      {isOwner && (
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
+            <CardDescription>
+              Las acciones de esta sección son permanentes e irreversibles.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+              <div>
+                <p className="font-medium text-sm">Eliminar organización</p>
+                <p className="text-sm text-muted-foreground">
+                  Borra permanentemente <strong>{orgName}</strong> y todos sus datos:
+                  casos, clientes, archivos y cuentas de equipo.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <DeleteOrganizationDialog orgName={orgName} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

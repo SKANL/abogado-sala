@@ -21,6 +21,8 @@ interface Organization {
     // when plan_status = "trialing" but trial_ends_at has passed.
     plan_status: "active" | "trialing" | "past_due" | "canceled" | "unpaid" | "expired";
     trial_ends_at?: string;
+    primary_color?: string | null;
+    logo_url?: string | null;
 }
 
 interface OrganizationContextType {

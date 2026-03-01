@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server-admin";
 import { inviteMemberSchema, updateOrganizationSchema, revokeInvitationSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
 import { Result } from "@/types";
@@ -183,4 +184,80 @@ export async function acceptInvitationAction(
 
   const requiresEmailConfirm = !data.session;
   return { success: true, data: { requiresEmailConfirm } };
+}
+
+/**
+ * Deletes the entire organisation and all associated data.
+ * Restricted to the org 'owner' role via a SECURITY DEFINER DB function.
+ *
+ * Flow:
+ *   1. Call `delete_organization` RPC — handles all DB rows and queues storage
+ *      cleanup for case files.  Returns the member UUIDs it removed.
+ *   2. Delete organization-assets (logo, etc.) directly from storage.
+ *   3. Delete every member from auth.users via the admin API (profile rows
+ *      were already cascade-deleted by the DB function).
+ *   4. Sign out the current user — the client redirects to /login.
+ */
+export async function deleteOrganizationAction(): Promise<Result<void>> {
+  const supabase = await createClient();
+  const admin = createAdminClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const orgId = user?.app_metadata?.org_id as string | undefined;
+
+  if (!user || !orgId) {
+    return { success: false, error: "No autenticado", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+  }
+
+  // Must be the org owner (DB function enforces this too, but fail fast here)
+  const role = user.app_metadata?.role as string | undefined;
+  if (role !== "owner") {
+    return { success: false, error: "Solo el propietario puede eliminar la organización", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+  }
+
+  // ── 1. DB deletion via SECURITY DEFINER function ────────────────────────
+  // Returns the list of member user UUIDs that were deleted from profiles.
+  const { data: memberIds, error: rpcError } = await supabase
+    .rpc("delete_organization", { p_org_id: orgId });
+
+  if (rpcError) {
+    return handleError(rpcError);
+  }
+
+  const userIds: string[] = (memberIds as { id?: string }[] | string[] | null ?? []).map(
+    (row) => (typeof row === "string" ? row : (row as any).id ?? row)
+  ).filter(Boolean);
+
+  // ── 2. Clean up organization-assets storage (logo, etc.) ─────────────────
+  try {
+    const { data: storedFiles } = await admin.storage
+      .from("organization-assets")
+      .list(orgId);
+
+    if (storedFiles && storedFiles.length > 0) {
+      const paths = storedFiles.map((f) => `${orgId}/${f.name}`);
+      await admin.storage.from("organization-assets").remove(paths);
+    }
+  } catch {
+    // Non-fatal — storage cleanup failure doesn't block the response
+  }
+
+  // ── 3. Delete all member auth.users (profiles were already cascade-deleted) ─
+  const deletionResults = await Promise.allSettled(
+    userIds.map((uid) => admin.auth.admin.deleteUser(uid))
+  );
+
+  const failedDeletions = deletionResults
+    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    .map((r) => r.reason);
+
+  if (failedDeletions.length > 0) {
+    console.error("Some auth users could not be deleted:", failedDeletions);
+    // Non-fatal: orphaned auth users without a profile/org are harmless
+  }
+
+  // ── 4. Sign out (client will redirect to /login) ─────────────────────────
+  await supabase.auth.signOut();
+
+  return { success: true, data: undefined };
 }
