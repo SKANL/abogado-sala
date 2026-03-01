@@ -5,25 +5,20 @@ import { Plus, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { CasesTable } from "@/features/cases/components/cases-table";
 import { PageHeader } from "@/components/ui/page-header";
+import { getCasesList } from "@/lib/db/queries";
 
 export default async function CasesPage() {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
   const role = user?.app_metadata?.role ?? "member";
   const isMember = role === "member";
 
-  let query = supabase
-    .from("cases")
-    .select(`*, client:clients(full_name)`)
-    .order("created_at", { ascending: false });
-
-  // Lawyers only see their assigned cases; owners/admins see everything.
-  if (isMember && user) {
-    query = query.eq("assigned_to", user.id);
-  }
-
-  const { data: cases } = await query;
+  // Cached: zero DB hit on repeated navigation within stale window
+  const cases = await getCasesList(
+    user?.app_metadata?.org_id,
+    user?.id,
+    isMember
+  );
 
   return (
     <div className="space-y-4">

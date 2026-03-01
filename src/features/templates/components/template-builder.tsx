@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './sortable-item';
@@ -43,7 +43,7 @@ interface TemplateBuilderProps {
         id: string;
         title: string;
         scope: string;
-        schema: any;
+        schema: Record<string, { label?: string; type?: string; required?: boolean; order?: number; options?: string[]; placeholder?: string; description?: string }>;
     };
 }
 
@@ -55,9 +55,9 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
   
   // Initialize fields from schema object and SORT by order
   const initialFields: TemplateField[] = initialData?.schema 
-    ? Object.entries(initialData.schema).map(([id, val]: [string, any]) => ({
+    ? Object.entries(initialData.schema).map(([id, val]) => ({
         id,
-        label: val.label,
+        label: val.label ?? '',
         type: val.type as FieldType,
         required: !!val.required,
         order: typeof val.order === 'number' ? val.order : 0,
@@ -76,7 +76,7 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
   // Mark dirty on any change after initial mount
   useEffect(() => {
     if (!isMounted.current) { isMounted.current = true; return; }
-    setIsDirty(true);
+    startTransition(() => setIsDirty(true));
   }, [title, scope, fields]);
 
   // Warn user before leaving with unsaved changes
@@ -145,7 +145,7 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
                  : {} )
         };
         return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, Record<string, unknown>>);
 
     const formData = new FormData();
     if (isEditing) formData.append("id", initialData.id);
@@ -323,7 +323,7 @@ export function TemplateBuilder({ initialData }: TemplateBuilderProps) {
                                         </Label>
                                         
                                         {field.type === 'text' && <Input disabled placeholder={field.placeholder || "Texto..."} />}
-                                        {field.type === 'long_text' && <Textarea disabled placeholder={field.placeholder || "Texto largo..."} className="min-h-[80px]" />}
+                                        {field.type === 'long_text' && <Textarea disabled placeholder={field.placeholder || "Texto largo..."} className="min-h-20" />}
                                         {field.type === 'number' && <Input type="number" disabled placeholder={field.placeholder || "0"} />}
                                         {field.type === 'date' && <Input type="date" disabled />}
                                         {field.type === 'file' && <Input type="file" disabled />}

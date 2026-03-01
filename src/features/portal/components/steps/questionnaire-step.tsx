@@ -13,9 +13,20 @@ import { submitQuestionnaireAction } from "@/features/portal/actions";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+interface QuestionnaireField {
+  type?: string;
+  label?: string;
+  required?: boolean;
+  order?: number;
+  options?: string | string[];
+  placeholder?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
 interface QuestionnaireStepProps {
-  templateSnapshot: any;
-  currentAnswers: any;
+  templateSnapshot: Record<string, QuestionnaireField> | null;
+  currentAnswers: Record<string, string> | null;
   token: string;
   onNext: () => void;
 }
@@ -26,12 +37,12 @@ export function QuestionnaireStep({ templateSnapshot, currentAnswers, token, onN
 
   // 1. Extract Questions (filter out 'file' types), sorted by saved order
   const questions = Object.entries(templateSnapshot || {})
-    .filter(([_, field]: [string, any]) => field.type !== 'file')
-    .map(([id, field]: [string, any]) => ({
+    .filter(([, field]: [string, QuestionnaireField]) => field.type !== 'file')
+    .map(([id, field]: [string, QuestionnaireField]) => ({
       id,
       ...field
     }))
-    .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+    .sort((a, b) => ((a.order ?? 0) as number) - ((b.order ?? 0) as number));
 
   const handleChange = (id: string, value: string) => {
     setAnswers(prev => ({
@@ -62,8 +73,8 @@ export function QuestionnaireStep({ templateSnapshot, currentAnswers, token, onN
             throw new Error(result.error);
         }
         onNext();
-    } catch (err: any) {
-        toast.error("Error al guardar respuestas", { description: err.message });
+    } catch (err: unknown) {
+        toast.error("Error al guardar respuestas", { description: err instanceof Error ? err.message : 'Error desconocido' });
     } finally {
         setSubmitting(false);
     }
@@ -107,7 +118,7 @@ export function QuestionnaireStep({ templateSnapshot, currentAnswers, token, onN
                             value={answers[q.id] || ''}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange(q.id, e.target.value)}
                             placeholder={q.placeholder || "Escribe tu respuesta aquí..."}
-                            className="min-h-[120px] text-base"
+                            className="min-h-30 text-base"
                         />
                     )}
                 {q.type === 'date' && (
@@ -136,7 +147,7 @@ export function QuestionnaireStep({ templateSnapshot, currentAnswers, token, onN
                             <SelectValue placeholder={q.placeholder || "Selecciona una opción"} />
                         </SelectTrigger>
                         <SelectContent>
-                            {(q.options ? q.options.join(',') : '').split(',').filter(Boolean).map((opt: string, i: number) => (
+                            {(q.options ? (Array.isArray(q.options) ? q.options.join(',') : q.options) : '').split(',').filter(Boolean).map((opt: string, i: number) => (
                                 <SelectItem key={i} value={opt.trim()}>{opt.trim()}</SelectItem>
                             ))}
                         </SelectContent>
@@ -148,7 +159,7 @@ export function QuestionnaireStep({ templateSnapshot, currentAnswers, token, onN
                         onValueChange={(val: string) => handleChange(q.id, val)}
                         className="mt-2"
                     >
-                        {(q.options ? q.options.join(',') : '').split(',').filter(Boolean).map((opt: string, i: number) => (
+                        {(q.options ? (Array.isArray(q.options) ? q.options.join(',') : q.options) : '').split(',').filter(Boolean).map((opt: string, i: number) => (
                             <div key={i} className="flex items-center space-x-2">
                                 <RadioGroupItem value={opt.trim()} id={`${q.id}-${i}`} />
                                 <Label htmlFor={`${q.id}-${i}`} className="font-normal">{opt.trim()}</Label>
@@ -158,7 +169,7 @@ export function QuestionnaireStep({ templateSnapshot, currentAnswers, token, onN
                 )}
                 {q.type === 'checkbox' && (
                     <div className="flex flex-col gap-2 mt-2">
-                        {(q.options ? q.options.join(',') : '').split(',').filter(Boolean).map((opt: string, i: number) => {
+                        {(q.options ? (Array.isArray(q.options) ? q.options.join(',') : q.options) : '').split(',').filter(Boolean).map((opt: string, i: number) => {
                             const trimmedOpt = opt.trim();
                             const currentVals = answers[q.id] ? answers[q.id].split(',').filter(Boolean) : [];
                             const isChecked = currentVals.includes(trimmedOpt);

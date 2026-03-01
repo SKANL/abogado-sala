@@ -25,7 +25,7 @@ export default function LandingPage() {
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
                   Gestión Legal Simplificada
                 </h1>
-                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                <p className="mx-auto max-w-175 text-muted-foreground md:text-xl">
                   La plataforma integral para despachos de abogados. Gestiona clientes, expedientes y comparte avances en tiempo real.
                 </p>
               </div>

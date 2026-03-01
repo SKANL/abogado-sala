@@ -4,14 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/server-admin";
 import { inviteMemberSchema, updateOrganizationSchema, revokeInvitationSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
-import { Result } from "@/types";
-import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { Result, ActionState } from "@/types";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export async function inviteMemberAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<{ token: string }>> {
   const rawData = Object.fromEntries(formData);
   const parse = inviteMemberSchema.safeParse(rawData);
 
@@ -32,7 +32,7 @@ export async function inviteMemberAction(
      return { success: false, error: "No org_id found", code: ERROR_CODES.AUTH_UNAUTHORIZED };
   }
 
-  const crypto = require("crypto");
+  const crypto = require("crypto"); // eslint-disable-line @typescript-eslint/no-require-imports
   const token = crypto.randomBytes(32).toString("hex");
 
   const { error, data: invitation } = await supabase
@@ -53,13 +53,14 @@ export async function inviteMemberAction(
   }
 
   revalidatePath("/equipo");
+  revalidateTag(CACHE_TAGS.team, {});
   return { success: true, data: invitation };
 }
 
 export async function updateOrganizationAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
     const rawData = Object.fromEntries(formData);
     const parse = updateOrganizationSchema.safeParse(rawData);
 
@@ -91,8 +92,98 @@ export async function updateOrganizationAction(
         return handleError(error);
     }
     
-    revalidatePath("/dashboard"); // Global update
+    revalidatePath("/dashboard");
+    revalidateTag(CACHE_TAGS.dashboard, {});
     return { success: true, data: updatedOrg };
+}
+
+export async function updateMemberRoleAction(
+  memberId: string,
+  newRole: "admin" | "member"
+): Promise<Result<void>> {
+  if (!memberId || !newRole) {
+    return { success: false, error: "Datos requeridos", code: ERROR_CODES.VAL_INVALID_INPUT };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.app_metadata?.role;
+  const orgId = user?.app_metadata?.org_id;
+
+  if (!orgId || (role !== "owner" && role !== "admin")) {
+    return { success: false, error: "Sin permisos", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role: newRole })
+    .eq("id", memberId)
+    .eq("org_id", orgId);
+
+  if (error) return handleError(error);
+
+  revalidatePath("/equipo");
+  revalidateTag(CACHE_TAGS.team, {});
+  return { success: true, data: undefined };
+}
+
+export async function deactivateMemberAction(memberId: string): Promise<Result<void>> {
+  if (!memberId) {
+    return { success: false, error: "ID requerido", code: ERROR_CODES.VAL_INVALID_INPUT };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.app_metadata?.role;
+  const orgId = user?.app_metadata?.org_id;
+
+  if (!orgId || (role !== "owner" && role !== "admin")) {
+    return { success: false, error: "Sin permisos", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+  }
+
+  // Prevent self-deactivation
+  if (memberId === user?.id) {
+    return { success: false, error: "No puedes desactivarte a ti mismo", code: ERROR_CODES.VAL_INVALID_INPUT };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "suspended" })
+    .eq("id", memberId)
+    .eq("org_id", orgId);
+
+  if (error) return handleError(error);
+
+  revalidatePath("/equipo");
+  revalidateTag(CACHE_TAGS.team, {});
+  return { success: true, data: undefined };
+}
+
+export async function reactivateMemberAction(memberId: string): Promise<Result<void>> {
+  if (!memberId) {
+    return { success: false, error: "ID requerido", code: ERROR_CODES.VAL_INVALID_INPUT };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.app_metadata?.role;
+  const orgId = user?.app_metadata?.org_id;
+
+  if (!orgId || (role !== "owner" && role !== "admin")) {
+    return { success: false, error: "Sin permisos", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "active" })
+    .eq("id", memberId)
+    .eq("org_id", orgId);
+
+  if (error) return handleError(error);
+
+  revalidatePath("/equipo");
+  revalidateTag(CACHE_TAGS.team, {});
+  return { success: true, data: undefined };
 }
 
 export async function removeMemberAction(userId: string): Promise<Result<void>> {
@@ -108,6 +199,7 @@ export async function removeMemberAction(userId: string): Promise<Result<void>> 
     }
 
     revalidatePath("/equipo");
+    revalidateTag(CACHE_TAGS.team, {});
     return { success: true, data: undefined };
 }
 
@@ -126,6 +218,7 @@ export async function revokeInvitationAction(invitationId: string): Promise<Resu
     }
     
     revalidatePath("/equipo");
+    revalidateTag(CACHE_TAGS.team, {});
     return { success: true, data: undefined };
 }
 
@@ -134,7 +227,7 @@ export async function revokeInvitationAction(invitationId: string): Promise<Resu
  * El trigger handle_new_user asigna automáticamente org_id y role.
  */
 export async function acceptInvitationAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
 ): Promise<Result<{ requiresEmailConfirm: boolean }>> {
   const token = formData.get("token") as string;
@@ -225,7 +318,7 @@ export async function deleteOrganizationAction(): Promise<Result<void>> {
   }
 
   const userIds: string[] = (memberIds as { id?: string }[] | string[] | null ?? []).map(
-    (row) => (typeof row === "string" ? row : (row as any).id ?? row)
+    (row) => (typeof row === "string" ? row : (row as Record<string, unknown>).id as string ?? row)
   ).filter(Boolean);
 
   // ── 2. Clean up organization-assets storage (logo, etc.) ─────────────────

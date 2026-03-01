@@ -73,7 +73,7 @@ export function CommandMenu() {
 
         // 2. Find cases whose client matched — search by client_id IN matched clients.
         //    Fall back to token search if no client names matched (direct token lookup).
-        const matchedClientIds = (clientsData ?? []).map((c: any) => c.id);
+        const matchedClientIds = (clientsData ?? []).map((c: { id: string }) => c.id);
         const casesQuery = supabase
           .from("cases")
           .select("id, token, status, clients(full_name)")
@@ -83,7 +83,7 @@ export function CommandMenu() {
           ? await casesQuery.in("client_id", matchedClientIds)
           : await casesQuery.ilike("token", searchTerm); // token fallback
 
-        const caseResults: SearchResult[] = (casesData ?? []).map((c: any) => ({
+        const caseResults: SearchResult[] = (casesData ?? []).map((c: { id: string; token: string; status: string; clients?: { full_name?: string } | null }) => ({
           id: c.id,
           type: "case",
           label: c.clients?.full_name ?? c.token,
@@ -91,11 +91,11 @@ export function CommandMenu() {
           href: `/casos/${c.id}`,
         }));
 
-        const clientResults: SearchResult[] = (clientsData ?? []).map((cl: any) => ({
+        const clientResults: SearchResult[] = (clientsData ?? []).map((cl: { id: string; full_name: string; email: string | null }) => ({
           id: cl.id,
           type: "client",
           label: cl.full_name,
-          sublabel: cl.email,
+          sublabel: cl.email ?? undefined,
           href: `/clientes/${cl.id}`,
         }));
 

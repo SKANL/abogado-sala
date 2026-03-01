@@ -7,7 +7,7 @@ interface DashboardRealtimeListenerProps {
   orgId?: string;
 }
 
-export function DashboardRealtimeListener({ userId, orgId }: DashboardRealtimeListenerProps) {
+export function DashboardRealtimeListener({ orgId }: DashboardRealtimeListenerProps) {
   // 1. Listen for new/updated cases in the Org
   // RLS will ensure we only receive events for cases we have access to (e.g. if we are constrained to specific clients).
   // Filtering by org_id reduces noise if we had multiple tenants broadcasting (though RLS handles that too).

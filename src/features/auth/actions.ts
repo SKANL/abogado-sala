@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signupSchema, loginSchema } from "@/lib/schemas/auth";
 import { updateProfileSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
-import { Result } from "@/types";
+import { Result, ActionState } from "@/types";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -29,7 +29,7 @@ const getAdminClient = () => {
 };
 
 export async function signupWithOrgAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
 ): Promise<Result<void>> {
   const rawData = Object.fromEntries(formData);
@@ -137,7 +137,7 @@ export async function signupWithOrgAction(
 }
 
 export async function loginAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
 ): Promise<Result<void>> {
     const rawData = Object.fromEntries(formData);
@@ -174,7 +174,7 @@ export async function logoutAction() {
 }
 
 export async function forgotPasswordAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
 ): Promise<Result<void>> {
   const email = formData.get("email") as string;
@@ -202,7 +202,7 @@ export async function forgotPasswordAction(
 }
 
 export async function updatePasswordAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
 ): Promise<Result<void>> {
   const password = formData.get("password") as string;
@@ -236,9 +236,9 @@ export async function updatePasswordAction(
 }
 
 export async function updateProfileAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
     const rawData = Object.fromEntries(formData);
     const parse = updateProfileSchema.safeParse(rawData);
 

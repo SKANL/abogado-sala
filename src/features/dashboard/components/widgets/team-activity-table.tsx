@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Briefcase, Clock, Shield, Users } from "lucide-react";
+import { Briefcase, Clock, Users } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export interface TeamMemberStat {

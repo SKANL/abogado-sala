@@ -5,13 +5,22 @@ import { createAdminClient } from "@/lib/supabase/server-admin";
 import { createNotification } from "@/lib/services/notification-service";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
 import { Result } from "@/types";
+import type { Json } from "@/lib/supabase/database.types";
 import { revalidatePath } from "next/cache";
 
 // Type definition matches RPC return
+export type PortalFile = {
+  id: string;
+  category: string;
+  description?: string | null;
+  status: 'pending' | 'uploaded' | 'missing' | 'rejected' | 'exception';
+};
+
 export type CasePublic = {
-  case: any; // Ideally stricter case type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  case: any; // Complex dynamic shape from RPC — strict typing deferred
   client_name: string;
-  files: any[];
+  files: PortalFile[];
 };
 
 export async function getCaseByTokenAction(token: string): Promise<Result<CasePublic>> {
@@ -58,7 +67,7 @@ export async function flagFileExceptionAction(
 export async function logPortalAccessAction(
     token: string,
     event: string, // PortalEventEnum
-    metadata: any = {}
+    metadata: Record<string, unknown> = {}
 ): Promise<Result<void>> {
     const supabase = await createClient();
     
@@ -66,7 +75,7 @@ export async function logPortalAccessAction(
     await supabase.rpc("log_portal_access", {
         p_case_token: token,
         p_event_type: event,
-        p_metadata: metadata || {}
+        p_metadata: (metadata || {}) as Json
     });
 
     return { success: true, data: undefined };
@@ -104,8 +113,9 @@ export async function advanceStepAction(
         .eq('token', token)
         .single();
         
-      if (caseRef && caseRef.clients && (caseRef.clients as any).assigned_lawyer_id) {
-          const clientData = caseRef.clients as any;
+      type ClientRef = { full_name?: string; assigned_lawyer_id?: string };
+      const clientData = caseRef?.clients as ClientRef;
+      if (caseRef && clientData && clientData.assigned_lawyer_id) {
           const clientName = clientData.full_name || 'Un cliente';
           const lawyerId = clientData.assigned_lawyer_id;
           
@@ -159,10 +169,11 @@ export async function submitQuestionnaireAction(
         .eq('token', token)
         .single();
         
-      if (caseRef && caseRef.clients && (caseRef.clients as any).assigned_lawyer_id) {
-          const clientData = caseRef.clients as any;
-          const clientName = clientData.full_name || 'Un cliente';
-          const lawyerId = clientData.assigned_lawyer_id;
+      type ClientRef2 = { full_name?: string; assigned_lawyer_id?: string };
+      const clientData2 = caseRef?.clients as ClientRef2;
+      if (caseRef && clientData2 && clientData2.assigned_lawyer_id) {
+          const clientName = clientData2.full_name || 'Un cliente';
+          const lawyerId = clientData2.assigned_lawyer_id;
           
           await createNotification(adminClient, {
               userId: lawyerId,
@@ -213,10 +224,11 @@ export async function confirmPortalUploadAction(
           .eq('token', token)
           .single();
           
-        if (caseRef && caseRef.clients && (caseRef.clients as any).assigned_lawyer_id) {
-            const clientData = caseRef.clients as any;
-            const clientName = clientData.full_name || 'Un cliente';
-            const lawyerId = clientData.assigned_lawyer_id;
+        type ClientRef3 = { full_name?: string; assigned_lawyer_id?: string };
+        const clientData3 = caseRef?.clients as ClientRef3;
+        if (caseRef && clientData3 && clientData3.assigned_lawyer_id) {
+            const clientName = clientData3.full_name || 'Un cliente';
+            const lawyerId = clientData3.assigned_lawyer_id;
             
             await createNotification(adminClient, {
                 userId: lawyerId,

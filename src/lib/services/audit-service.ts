@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/database.types";
 
 export type AuditAction = 
     | 'case_created' 
@@ -16,7 +17,7 @@ interface LogActivityParams {
     action: AuditAction;
     entityType: EntityType;
     entityId: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     orgId?: string; // Optional if we can infer, but better explicit
 }
 
@@ -47,7 +48,7 @@ export async function logActivity(params: LogActivityParams) {
             action: params.action,
             entity_type: params.entityType,
             entity_id: params.entityId,
-            metadata: params.metadata || {}
+            metadata: (params.metadata || {}) as Json
         });
 
         if (error) {

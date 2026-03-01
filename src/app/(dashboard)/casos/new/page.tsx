@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileText, Users, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { getClientsForSelector, getTemplatesForSelector } from "@/lib/db/queries";
 
 export default async function NewCasePage({
     searchParams,
@@ -14,19 +15,14 @@ export default async function NewCasePage({
 }) {
     const supabase = await createClient();
     const { client_id } = await searchParams;
-    
-    // Fetch active clients for the selector
-    const { data: clients } = await supabase
-        .from("clients")
-        .select("id, full_name")
-        .in("status", ["active", "prospect"])
-        .order("full_name");
+    const { data: { user } } = await supabase.auth.getUser();
+    const orgId = user?.app_metadata?.org_id as string;
 
-    // Fetch available templates
-    const { data: templates } = await supabase
-        .from("templates")
-        .select("id, title, schema")
-        .order("created_at", { ascending: false });
+    // Both cached — revalidated when clients/templates change
+    const [clients, templates] = await Promise.all([
+        getClientsForSelector(orgId),
+        getTemplatesForSelector(orgId),
+    ]);
 
     const hasClients = (clients?.length ?? 0) > 0;
     const hasTemplates = (templates?.length ?? 0) > 0;
@@ -114,7 +110,7 @@ export default async function NewCasePage({
                 <CardContent>
                     <CaseForm
                         clients={clients || []}
-                        templates={templates || []}
+                        templates={(templates || []) as Parameters<typeof CaseForm>[0]['templates']}
                         preselectedClientId={client_id}
                     />
                 </CardContent>

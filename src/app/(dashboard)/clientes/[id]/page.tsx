@@ -8,31 +8,26 @@ import { Button } from "@/components/ui/button";
 import { FileText, User, ArrowLeft, FolderOpen, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { WIZARD_TOTAL_STEPS, getStepName, getWizardProgress } from "@/features/portal/config";
+import { getStepName, getWizardProgress } from "@/features/portal/config";
+import { getClientById, getClientCases } from "@/lib/db/queries";
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
     const supabase = await createClient();
     const { id } = await params;
+    const { data: { user } } = await supabase.auth.getUser();
+    const orgId = user?.app_metadata?.org_id as string;
 
-    // 1. Fetch Client
-    const { data: client } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("id", id)
-        .single();
+    // Both calls are cached — revalidated when client/case data changes
+    const [client, cases] = await Promise.all([
+        getClientById(id, orgId),
+        getClientCases(id, orgId),
+    ]);
 
     if (!client) {
         notFound();
     }
 
-    // 2. Fetch Cases
-    const { data: cases } = await supabase
-        .from("cases")
-        .select("*")
-        .eq("client_id", id)
-        .order("created_at", { ascending: false });
-
-    const firstActiveCase = cases?.find(c => c.status === "in_progress" || c.status === "review") ?? cases?.[0];
+    const firstActiveCase = cases.find(c => c.status === "in_progress" || c.status === "review") ?? cases[0];
 
     return (
         <div className="space-y-4">

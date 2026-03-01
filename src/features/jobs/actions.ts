@@ -3,10 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { jobRequestSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
-import { Result } from "@/types";
+import { Result, ActionState } from "@/types";
 
 export async function requestZipGenerationAction(
-    prevState: any,
+    prevState: ActionState,
     formData: FormData
 ): Promise<Result<void>> {
     const rawData = Object.fromEntries(formData);

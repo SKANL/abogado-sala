@@ -3,10 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { stripeCheckoutSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
-import { Result } from "@/types";
+import { Result, ActionState } from "@/types";
 
 export async function createStripeCheckoutAction(
-    prevState: any,
+    prevState: ActionState,
     formData: FormData
 ): Promise<Result<{ url: string }>> {
     const rawData = Object.fromEntries(formData);
@@ -49,7 +49,15 @@ export async function createStripePortalAction(): Promise<Result<{ url: string }
     };
 }
 
-export async function getSubscriptionAction(): Promise<Result<any>> {
+type SubscriptionData = {
+    plan_tier: string;
+    plan_status: string;
+    trial_ends_at: string | null;
+    stripe_customer_id: string | null;
+    status: string;
+};
+
+export async function getSubscriptionAction(): Promise<Result<SubscriptionData>> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     

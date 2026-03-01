@@ -9,6 +9,7 @@ import { updateOrganizationAction } from "@/features/org/actions";
 import { ImageUploader } from "@/components/common/image-uploader";
 import { FormFieldError } from "@/components/ui/form-field-error";
 import { DeleteOrganizationDialog } from "@/features/org/components/delete-organization-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Result } from "@/types";
 
@@ -18,11 +19,12 @@ interface Props {
   primaryColor: string | null;
   logoUrl: string | null;
   isOwner: boolean;
+  consentText?: string | null;
 }
 
-const initialState: Result<any> = { success: false, error: "" };
+const initialState: Result<unknown> = { success: false, error: "" };
 
-export function OrgSettingsForm({ orgId, orgName, primaryColor, logoUrl, isOwner }: Props) {
+export function OrgSettingsForm({ orgId, orgName, primaryColor, logoUrl, isOwner, consentText }: Props) {
   const [state, action, isPending] = useActionState(updateOrganizationAction, initialState);
   const [color, setColor] = useState<string>(primaryColor || "#18181b");
 
@@ -112,6 +114,27 @@ export function OrgSettingsForm({ orgId, orgName, primaryColor, logoUrl, isOwner
               />
               {!state.success && state.validationErrors?.logo_url && (
                 <FormFieldError message={state.validationErrors.logo_url[0]} />
+              )}
+            </div>
+
+            {/* Consent text for client portal */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label htmlFor="consent_text">Texto de Consentimiento del Portal</Label>
+              <p className="text-xs text-muted-foreground">
+                Este texto se mostrará al cliente antes de comenzar su expediente digital. Si lo dejas vacío, se usará el texto predeterminado.
+              </p>
+              <Textarea
+                id="consent_text"
+                name="consent_text"
+                defaultValue={consentText ?? ""}
+                disabled={isPending}
+                rows={8}
+                placeholder="Escribe aquí los términos y condiciones personalizados para el portal de tu cliente..."
+                className="resize-y font-mono text-xs"
+                maxLength={10000}
+              />
+              {!state.success && state.validationErrors?.consent_text && (
+                <FormFieldError message={state.validationErrors.consent_text[0]} />
               )}
             </div>
 

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AcceptInvitationForm } from "@/features/org/components/accept-invitation-form";
@@ -6,11 +7,9 @@ interface InvitationPageProps {
   params: Promise<{ token: string }>;
 }
 
-export default async function InvitationPage({ params }: InvitationPageProps) {
-  const { token } = await params;
+async function InvitationContent({ token }: { token: string }) {
   const supabase = await createClient();
 
-  // Verify invitation is still pending and valid
   const { data: rows, error } = await supabase
     .rpc("get_invitation_by_token", { p_token: token });
 
@@ -27,5 +26,14 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
       orgName={invitation.org_name}
       role={invitation.role}
     />
+  );
+}
+
+export default async function InvitationPage({ params }: InvitationPageProps) {
+  const { token } = await params;
+  return (
+    <Suspense>
+      <InvitationContent token={token} />
+    </Suspense>
   );
 }

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormFieldError } from "@/components/ui/form-field-error";
 
-const initialState: Result<any> = { success: false, error: "" };
+const initialState: Result<unknown> = { success: false, error: "" };
 
 interface ClientFormProps {
     initialData?: {

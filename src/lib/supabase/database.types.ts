@@ -56,8 +56,8 @@ export type Database = {
         Row: {
           case_id: string
           category: string
-          description: string | null
           created_at: string
+          description: string | null
           exception_reason: string | null
           file_key: string | null
           file_size: number
@@ -69,8 +69,8 @@ export type Database = {
         Insert: {
           case_id: string
           category: string
-          description?: string | null
           created_at?: string
+          description?: string | null
           exception_reason?: string | null
           file_key?: string | null
           file_size?: number
@@ -82,8 +82,8 @@ export type Database = {
         Update: {
           case_id?: string
           category?: string
-          description?: string | null
           created_at?: string
+          description?: string | null
           exception_reason?: string | null
           file_key?: string | null
           file_size?: number
@@ -109,50 +109,112 @@ export type Database = {
           },
         ]
       }
+      case_notes: {
+        Row: {
+          author_id: string
+          case_id: string
+          content: string
+          created_at: string
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          case_id: string
+          content: string
+          created_at?: string
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          case_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_notes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cases: {
         Row: {
+          assigned_to: string | null
           client_id: string
           created_at: string
           current_step_index: number
           expires_at: string
           id: string
           org_id: string
-          status: Database["public"]["Enums"]["case_status"]
-          template_snapshot: Json
           questionnaire_answers: Json | null
+          status: Database["public"]["Enums"]["case_status"]
+          template_id: string | null
+          template_snapshot: Json
           token: string
           updated_at: string
-          template_id: string | null
         }
         Insert: {
+          assigned_to?: string | null
           client_id: string
           created_at?: string
           current_step_index?: number
           expires_at?: string
           id?: string
           org_id: string
-          status?: Database["public"]["Enums"]["case_status"]
-          template_snapshot?: Json
           questionnaire_answers?: Json | null
+          status?: Database["public"]["Enums"]["case_status"]
+          template_id?: string | null
+          template_snapshot?: Json
           token: string
           updated_at?: string
-          template_id?: string | null
         }
         Update: {
+          assigned_to?: string | null
           client_id?: string
           created_at?: string
           current_step_index?: number
           expires_at?: string
           id?: string
           org_id?: string
-          status?: Database["public"]["Enums"]["case_status"]
-          template_snapshot?: Json
           questionnaire_answers?: Json | null
+          status?: Database["public"]["Enums"]["case_status"]
+          template_id?: string | null
+          template_snapshot?: Json
           token?: string
           updated_at?: string
-          template_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cases_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cases_client_id_fkey"
             columns: ["client_id"]
@@ -165,6 +227,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
             referencedColumns: ["id"]
           },
         ]
@@ -276,6 +345,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          metadata: Json | null
           org_id: string
           requester_id: string | null
           result_url: string | null
@@ -287,6 +357,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          metadata?: Json | null
           org_id: string
           requester_id?: string | null
           result_url?: string | null
@@ -298,6 +369,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          metadata?: Json | null
           org_id?: string
           requester_id?: string | null
           result_url?: string | null
@@ -368,6 +440,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          consent_text: string | null
           created_at: string
           id: string
           logo_url: string | null
@@ -381,6 +454,7 @@ export type Database = {
           trial_ends_at: string | null
         }
         Insert: {
+          consent_text?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -394,6 +468,7 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Update: {
+          consent_text?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -672,10 +747,6 @@ export type Database = {
       app_is_active: { Args: never; Returns: boolean }
       app_is_admin: { Args: never; Returns: boolean }
       app_is_owner: { Args: never; Returns: boolean }
-      delete_organization: {
-        Args: { p_org_id: string }
-        Returns: string[]
-      }
       check_rate_limit: {
         Args: {
           p_capacity: number
@@ -691,6 +762,7 @@ export type Database = {
           case_id: string
           category: string
           created_at: string
+          description: string | null
           exception_reason: string | null
           file_key: string | null
           file_size: number
@@ -706,21 +778,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      confirm_file_upload_portal: {
+        Args: {
+          p_file_id: string
+          p_file_key: string
+          p_file_size: number
+          p_token: string
+        }
+        Returns: undefined
+      }
+      delete_organization: { Args: { p_org_id: string }; Returns: string[] }
+      expire_trialing_organizations: { Args: never; Returns: number }
       flag_file_exception: {
         Args: { p_file_id: string; p_reason: string; p_token: string }
         Returns: undefined
       }
+      generate_files_for_case: {
+        Args: { p_case_id: string; p_org_id: string; p_template_snapshot: Json }
+        Returns: undefined
+      }
       get_case_by_token: { Args: { p_token: string }; Returns: Json }
-      get_org_members_with_email: {
-        Args: { p_org_id: string }
+      get_case_validation: {
+        Args: { p_token: string }
         Returns: {
-          id: string
-          full_name: string | null
-          avatar_url: string | null
-          role: string
-          status: string
-          email: string | null
-          created_at: string
+          case_created_at: string
+          case_status: string
+          client_name: string
+          found: boolean
+          org_logo_url: string
+          org_name: string
         }[]
       }
       get_invitation: {
@@ -742,6 +828,18 @@ export type Database = {
           status: Database["public"]["Enums"]["invitation_status"]
         }[]
       }
+      get_org_members_with_email: {
+        Args: { p_org_id: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: string
+          status: string
+        }[]
+      }
       log_portal_access: {
         Args: {
           p_case_token: string
@@ -758,30 +856,27 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      submit_questionnaire_answers: {
+        Args: { p_answers: Json; p_token: string }
+        Returns: undefined
+      }
       update_case_progress: {
         Args: { p_step_index: number; p_token: string }
         Returns: undefined
       }
-      submit_questionnaire_answers: {
-        Args: { p_token: string; p_answers: Json }
-        Returns: undefined
-      }
-      confirm_file_upload_portal: {
-        Args: { 
-            p_token: string
-            p_file_id: string
-            p_file_key: string
-            p_file_size: number
-        }
-        Returns: undefined
-      }
     }
     Enums: {
-      case_status: "draft" | "in_progress" | "review" | "completed"
+      case_status: "draft" | "in_progress" | "review" | "completed" | "archived"
       client_status: "prospect" | "active" | "archived"
       file_status: "pending" | "uploaded" | "error"
       invitation_status: "pending" | "accepted" | "expired" | "revoked"
-      plan_status: "active" | "trialing" | "past_due" | "canceled" | "paused" | "expired"
+      plan_status:
+        | "active"
+        | "trialing"
+        | "past_due"
+        | "canceled"
+        | "paused"
+        | "expired"
       plan_tier: "trial" | "pro" | "enterprise" | "demo"
       subscription_status:
         | "active"
@@ -792,7 +887,7 @@ export type Database = {
         | "trialing"
         | "unpaid"
       template_scope: "private" | "global"
-      user_role: "owner" | "admin" | "member"
+      user_role: "admin" | "member" | "owner"
       user_status: "active" | "suspended" | "archived"
     }
     CompositeTypes: {
@@ -921,11 +1016,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      case_status: ["draft", "in_progress", "review", "completed"],
+      case_status: ["draft", "in_progress", "review", "completed", "archived"],
       client_status: ["prospect", "active", "archived"],
       file_status: ["pending", "uploaded", "error"],
       invitation_status: ["pending", "accepted", "expired", "revoked"],
-      plan_status: ["active", "trialing", "past_due", "canceled", "paused"],
+      plan_status: [
+        "active",
+        "trialing",
+        "past_due",
+        "canceled",
+        "paused",
+        "expired",
+      ],
       plan_tier: ["trial", "pro", "enterprise", "demo"],
       subscription_status: [
         "active",
@@ -937,7 +1039,7 @@ export const Constants = {
         "unpaid",
       ],
       template_scope: ["private", "global"],
-      user_role: ["owner", "admin", "member"],
+      user_role: ["admin", "member", "owner"],
       user_status: ["active", "suspended", "archived"],
     },
   },

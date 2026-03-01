@@ -3,16 +3,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { insertClientSchema, updateClientSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
-import { Result } from "@/types";
-import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { Result, ActionState } from "@/types";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { checkOrgQuota } from "@/lib/services/quota-service";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { createNotification } from "@/lib/services/notification-service";
 
 export async function createClientAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
   const rawData = Object.fromEntries(formData);
   const parse = insertClientSchema.safeParse(rawData);
 
@@ -58,6 +58,7 @@ export async function createClientAction(
   }
 
   revalidatePath("/clientes");
+  revalidateTag(CACHE_TAGS.clients, {});
   
   // 2. Notify
   await createNotification(supabase, {
@@ -73,9 +74,9 @@ export async function createClientAction(
 }
 
 export async function updateClientAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
   const rawData = Object.fromEntries(formData);
   const parse = updateClientSchema.safeParse(rawData);
 
@@ -103,7 +104,9 @@ export async function updateClientAction(
   }
 
   revalidatePath("/clientes");
+  revalidateTag(CACHE_TAGS.clients, {});
   revalidatePath(`/clientes/${id}`);
+  revalidateTag(CACHE_TAGS.clientDetail(id), {});
   return { success: true, data: updatedClient };
 }
 
@@ -120,5 +123,6 @@ export async function deleteClientAction(clientId: string): Promise<Result<void>
   }
 
   revalidatePath("/clientes");
+  revalidateTag(CACHE_TAGS.clients, {});
   return { success: true, data: undefined };
 }

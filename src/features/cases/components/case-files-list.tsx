@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, Loader2, Download, X } from "lucide-react";
+import { FileText, Eye, Loader2, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -130,6 +131,7 @@ export function CaseFilesList({ files }: CaseFilesListProps) {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
             <DialogHeader className="p-4 border-b">
+                <DialogDescription className="sr-only">Vista previa del documento</DialogDescription>
                 <DialogTitle className="flex items-center justify-between mr-8">
                     <span>{selectedFile?.name}</span>
                     {selectedFile?.url && (

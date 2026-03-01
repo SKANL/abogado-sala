@@ -24,6 +24,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Home, Users, UsersRound, Briefcase, Settings, LogOut, FileText, ChevronUp, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import { logoutAction } from "@/features/auth/actions";
 
 /** Items visible to every role */
@@ -71,15 +72,41 @@ export function AppSidebar() {
   const initials = displayName.charAt(0).toUpperCase();
   const avatarUrl = user?.user_metadata?.avatar_url;
 
+  // Days remaining in trial (null when not trialing or no end date)
+  // eslint-disable-next-line react-hooks/purity
+  const now = useMemo(() => Date.now(), []);
+  const trialDaysLeft = (
+    organization.plan_status === "trialing" && organization.trial_ends_at
+      ? Math.max(0, Math.ceil(
+          (new Date(organization.trial_ends_at).getTime() - now) / (1000 * 60 * 60 * 24)
+        ))
+      : null
+  );
+
   return (
     <Sidebar variant="floating">
       <SidebarHeader className="p-4 border-b">
          <h2 className="text-xl font-bold tracking-tight">{organization.name}</h2>
          <div className="flex items-center gap-2 mt-1">
             {organization.plan_status === 'trialing' && organization.plan_tier === 'trial' ? (
-              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-blue-50/50 text-blue-700 border-blue-200">
-                Periodo de Prueba
-              </Badge>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-blue-50/50 text-blue-700 border-blue-200">
+                  Periodo de Prueba
+                </Badge>
+                {trialDaysLeft !== null && (
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      trialDaysLeft <= 3
+                        ? "text-destructive"
+                        : trialDaysLeft <= 7
+                        ? "text-amber-600"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {trialDaysLeft === 0 ? "Último día" : `${trialDaysLeft}d restantes`}
+                  </span>
+                )}
+              </div>
             ) : (
               <>
                 <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">

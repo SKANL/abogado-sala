@@ -1,9 +1,7 @@
-
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface RealtimeContextType {
@@ -15,11 +13,12 @@ const RealtimeContext = createContext<RealtimeContextType | undefined>(undefined
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     const [isConnected, setIsConnected] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
-    const router = useRouter();
-    const supabase = createClient();
+    // Stable ref — avoids adding supabase to useEffect dep arrays which causes loops
+    const supabaseRef = useRef(createClient());
 
     // Resolve the current user ID on mount
     useEffect(() => {
+        const supabase = supabaseRef.current;
         supabase.auth.getUser().then(({ data }) => {
             setUserId(data.user?.id ?? null);
         });
@@ -27,12 +26,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             setUserId(session?.user?.id ?? null);
         });
         return () => subscription.unsubscribe();
-    }, [supabase]);
+    }, []);
 
     useEffect(() => {
-        // Only subscribe once we have a confirmed userId to avoid leaking all-user notifications
+        // Only subscribe once we have a confirmed userId
         if (!userId) return;
 
+        const supabase = supabaseRef.current;
         const channel = supabase.channel(`notifications_${userId}`)
             .on(
                 "postgres_changes",
@@ -47,7 +47,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
                     toast(notification.title || "Nueva notificación", {
                         description: notification.message || "Tienes un nuevo mensaje del sistema.",
                     });
-                    router.refresh();
+                    // No router.refresh() needed — the notification bell badge is driven
+                    // by useNotifications() (React Query) which will invalidate on its own
+                    // realtime subscription. A full server re-render here is wasteful.
                 }
             )
             .subscribe((status) => {
@@ -60,7 +62,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             supabase.removeChannel(channel);
             setIsConnected(false);
         };
-    }, [supabase, router, userId]);
+    }, [userId]);
 
     return (
         <RealtimeContext.Provider value={{ isConnected }}>

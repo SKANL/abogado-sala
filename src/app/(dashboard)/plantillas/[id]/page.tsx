@@ -2,16 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { TemplateBuilder } from "@/features/templates/components/template-builder";
 import { PageHeader } from "@/components/ui/page-header";
+import { getTemplateById } from "@/lib/db/queries";
 
 export default async function EditTemplatePage({ params }: { params: { id: string } }) {
     const supabase = await createClient();
     const { id } = await params;
+    const { data: { user } } = await supabase.auth.getUser();
+    const orgId = user?.app_metadata?.org_id as string;
 
-    const { data: template } = await supabase
-        .from("templates")
-        .select("*")
-        .eq("id", id)
-        .single();
+    // Cached — revalidated when template changes
+    const template = await getTemplateById(id, orgId);
 
     if (!template) {
         notFound();
@@ -26,7 +26,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
                 />
             </div>
             <div className="flex-1 min-h-0">
-                <TemplateBuilder initialData={template} />
+                <TemplateBuilder initialData={template as Parameters<typeof TemplateBuilder>[0]['initialData']} />
             </div>
         </div>
     );

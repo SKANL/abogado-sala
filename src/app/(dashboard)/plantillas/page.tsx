@@ -15,13 +15,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { DeleteTemplateButton } from "@/features/templates/components/delete-template-button";
 import { PageHeader } from "@/components/ui/page-header";
+import { getTemplatesList } from "@/lib/db/queries";
 
 export default async function TemplatesPage() {
   const supabase = await createClient();
-  const { data: templates, error } = await supabase
-    .from("templates")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const { data: { user } } = await supabase.auth.getUser();
+  const orgId = user?.app_metadata?.org_id;
+
+  // Cached — templates rarely change; revalidated by template actions
+  const { data: templates, error } = await getTemplatesList(orgId);
 
   if (error) {
     console.error("Error fetching templates:", error);

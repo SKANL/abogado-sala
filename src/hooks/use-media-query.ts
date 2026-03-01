@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 
 export function useMediaQuery(query: string) {
   const [value, setValue] = useState(false);
@@ -10,7 +10,8 @@ export function useMediaQuery(query: string) {
 
     const result = matchMedia(query);
     result.addEventListener("change", onChange);
-    setValue(result.matches);
+    // Use startTransition to avoid synchronous setState in effect
+    startTransition(() => setValue(result.matches));
 
     return () => result.removeEventListener("change", onChange);
   }, [query]);

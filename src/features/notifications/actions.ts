@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notificationActionSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
 import { Result } from "@/types";
-import { revalidatePath } from "next/cache";
+
 
 export async function markNotificationReadAction(notificationIds: string[]): Promise<Result<void>> {
     const parse = notificationActionSchema.safeParse({ ids: notificationIds });

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import { Activity, FileText, User, Shield, Upload, FileMinus, FilePen } from "lucide-react";
+import { Activity, FileText, User, Shield, Upload } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ interface AuditLog {
     id: string;
     action: string;
     created_at: string;
-    metadata: any;
+    metadata: Record<string, unknown>;
     actor_id: string | null;
 }
 

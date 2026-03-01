@@ -2,7 +2,7 @@
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Upload, X, ImageIcon } from "lucide-react";
+import { Loader2, X, ImageIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -27,7 +27,6 @@ export function ImageUploader({
   aspectRatio = "auto",
   className,
 }: ImageUploaderProps) {
-  const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(defaultUrl || null);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -52,11 +51,7 @@ export function ImageUploader({
       return;
     }
 
-    setFile(selectedFile);
-    
-    // Create local preview
-    const objectUrl = URL.createObjectURL(selectedFile);
-    setPreview(objectUrl);
+    setPreview(URL.createObjectURL(selectedFile));
 
     // Auto upload
     await uploadFile(selectedFile);
@@ -82,9 +77,8 @@ export function ImageUploader({
       onUploadComplete(publicUrl);
       toast.success("Imagen subida correctamente");
 
-    } catch (error: any) {
-      toast.error(`Error al subir imagen: ${error.message}`);
-      setFile(null);
+    } catch (error: unknown) {
+      toast.error(`Error al subir imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       setPreview(defaultUrl || null);
     } finally {
       setIsUploading(false);
@@ -92,7 +86,6 @@ export function ImageUploader({
   };
 
   const handleRemove = () => {
-    setFile(null);
     setPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (onRemove) onRemove();

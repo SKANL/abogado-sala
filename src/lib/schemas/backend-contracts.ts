@@ -41,6 +41,7 @@ export const updateOrganizationSchema = z.object({
   name: z.string().min(2).optional(),
   primary_color: z.string().optional(),
   logo_url: z.string().optional(),
+  consent_text: z.string().max(10000).optional().nullable(),
 });
 
 export const createCaseSchema = z.object({

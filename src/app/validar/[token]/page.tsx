@@ -1,6 +1,5 @@
-import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, XCircle, FileText } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -51,7 +50,7 @@ const STATUS_LABELS_ES: Record<string, string> = {
 */
 
 // For the React component, I'll fetch data on the server.
-import { createClient as createServerClient } from "@supabase/supabase-js"; // Direct backend client strictly for this
+import { createClient as createSupabaseDirectClient } from "@supabase/supabase-js"; // Direct backend client strictly for this
 
 // Define exact return shape from RPC
 interface ValidationData {
@@ -66,15 +65,16 @@ interface ValidationData {
 export default async function ValidationPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   
-  // Use Service Role for this specific read-only public check
-  const supabase = createServerClient(
+  // Use Service Role direct client for this specific read-only public check
+  const supabase = createSupabaseDirectClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! 
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { db: { schema: 'public' } }
   );
 
   // We can query directly since we have service role, but we must limit fields manually for security.
   // Use standard client, RPC handles security
-  const { data, error } = await supabase
+  const { data } = await supabase
     .rpc('get_case_validation', { p_token: token })
     .single();
     

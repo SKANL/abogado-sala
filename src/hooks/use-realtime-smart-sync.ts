@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 interface RealtimeConfig {
@@ -14,7 +13,7 @@ interface RealtimeConfig {
   debounceMs?: number; // Default 500ms
   event?: "INSERT" | "UPDATE" | "DELETE" | "*";
   schema?: string;
-  onPayload?: (payload: any) => void; // Optional custom handler for delta patching
+  onPayload?: (payload: Record<string, unknown>) => void; // Optional custom handler for delta patching
 }
 
 /**
@@ -37,48 +36,63 @@ export function useRealtimeSmartSync({
 }: RealtimeConfig) {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const supabase = createClient();
-  
-  // Refs to handle debounce across renders
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Stable client ref — createClient() must NOT be called on every render,
+  // otherwise supabase ends up in the useEffect dep array and causes
+  // channel teardown + recreate on every render → AbortError loop.
+  const supabaseRef = useRef(createClient());
+
+  // Stable refs for callbacks/values that change every render to avoid
+  // triggering the effect when they haven't semantically changed.
+  const timeoutRef   = useRef<NodeJS.Timeout | null>(null);
+  const onPayloadRef = useRef<((payload: Record<string, unknown>) => void) | undefined>(onPayload);
+  const queryKeyRef  = useRef(queryKey);
+  const debounceRef  = useRef(debounceMs);
+
+  // Keep refs in sync without re-running the effect
+  useEffect(() => { onPayloadRef.current = onPayload; });
+  useEffect(() => { queryKeyRef.current  = queryKey;  });
+  useEffect(() => { debounceRef.current  = debounceMs; });
 
   useEffect(() => {
-    // Unique channel per configuration to avoid collisions
+    const supabase  = supabaseRef.current;
     const channelId = `${channelName}-${table}-${filter || 'all'}`;
-    
+
     const channel = supabase
       .channel(channelId)
       .on(
         "postgres_changes",
-        {
-          event,
-          schema,
-          table,
-          filter,
-        },
+        { event, schema, table, filter },
         (payload) => {
-          // 1. Run custom handler (Delta Patching)
-          if (onPayload) {
-            onPayload(payload);
+          if (onPayloadRef.current) {
+            onPayloadRef.current(payload);
           }
 
-          // 2. Debounced Invalidation (Smart Sync)
-          if (queryKey) {
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-            }
+          if (queryKeyRef.current) {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
             timeoutRef.current = setTimeout(() => {
-              console.log(`[Realtime] Invalidating ${queryKey} due to ${payload.eventType} on ${table}`);
-              queryClient.invalidateQueries({ queryKey });
-              router.refresh(); // Also refresh server components if needed
-            }, debounceMs);
+              console.log(`[Realtime] Invalidating due to ${payload.eventType} on ${table}`);
+              queryClient.invalidateQueries({ queryKey: queryKeyRef.current! });
+              // router.refresh() is NOT called here — React Query cache invalidation
+              // is sufficient when a queryKey is provided. router.refresh() forces
+              // a full server re-render + DB re-fetch for every realtime event, which
+              // defeats the purpose of client-side caching.
+            }, debounceRef.current);
+          } else {
+            // No queryKey → data lives only in Server Components, so we need
+            // to tell Next.js to re-render the page to pick up DB changes.
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(() => {
+              console.log(`[Realtime] Server refresh due to ${payload.eventType} on ${table}`);
+              router.refresh();
+            }, debounceRef.current);
           }
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-           console.log(`[Realtime] Connected to ${channelId}`);
+        if (status === "SUBSCRIBED") {
+          console.log(`[Realtime] Connected to ${channelId}`);
         }
       });
 
@@ -86,5 +100,7 @@ export function useRealtimeSmartSync({
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       supabase.removeChannel(channel);
     };
-  }, [channelName, table, filter, queryKey, debounceMs, event, schema, onPayload, queryClient, router, supabase]);
+  // Only re-run if the channel identity changes (which is intentional).
+  // Callbacks and debounce are handled via refs above.
+  }, [channelName, table, filter, event, schema, queryClient, router]);
 }

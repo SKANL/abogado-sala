@@ -32,6 +32,7 @@ const statusMap: Record<CaseStatus, string> = {
   in_progress: "En Progreso",
   review: "En Revisión",
   completed: "Completado",
+  archived: "Archivado",
 };
 
 /** Statuses that require an explicit confirmation before applying */

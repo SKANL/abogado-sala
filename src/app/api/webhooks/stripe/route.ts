@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -10,7 +9,8 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const signature = (await headers()).get("Stripe-Signature");
+  // Signature verification deferred until Stripe secrets are configured in production
+  // const signature = (await headers()).get("Stripe-Signature");
 
   let event;
 
@@ -20,8 +20,8 @@ export async function POST(req: Request) {
       
       // FOR DEMO/DEV: Parse directly (INSECURE - DO NOT DEPLOY WITHOUT SECRETS)
       event = JSON.parse(body);
-  } catch (err: any) {
-      return NextResponse.json({ error: `Webhook Check failed: ${err.message}` }, { status: 400 });
+  } catch (err: unknown) {
+      return NextResponse.json({ error: `Webhook Check failed: ${err instanceof Error ? err.message : 'Unknown error'}` }, { status: 400 });
   }
 
   try {
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       }
       
       return NextResponse.json({ received: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
       console.error("Webhook Logic Error:", err);
       return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }

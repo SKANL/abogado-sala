@@ -4,7 +4,19 @@ import { createClient } from "@/lib/supabase/server";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
 import { Result } from "@/types";
 
-export async function getOrganizationDetailsAction(): Promise<Result<any>> {
+type OrgDetails = {
+    id: string;
+    name: string;
+    slug: string;
+    plan_tier: "free" | "pro" | "enterprise" | "trial" | "basic" | "demo";
+    plan_status: "active" | "trialing" | "past_due" | "canceled" | "paused" | "expired";
+    trial_ends_at: string | undefined;
+    primary_color: string | null;
+    logo_url: string | null;
+    role: "member" | "admin" | "owner";
+};
+
+export async function getOrganizationDetailsAction(): Promise<Result<OrgDetails>> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -28,10 +40,10 @@ export async function getOrganizationDetailsAction(): Promise<Result<any>> {
         return handleError(error);
     }
 
-    const role = user.app_metadata.role || "member";
+    const role = (user.app_metadata.role || "member") as "member" | "admin" | "owner";
 
     return {
         success: true,
-        data: { ...org, role }
+        data: { ...org, role, trial_ends_at: org.trial_ends_at ?? undefined } as OrgDetails
     };
 }

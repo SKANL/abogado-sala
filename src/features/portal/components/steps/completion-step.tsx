@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, Home } from "lucide-react";
-import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2 } from "lucide-react";
 
 export function CompletionStep() {
   useEffect(() => {

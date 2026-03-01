@@ -49,9 +49,9 @@ export async function DashboardShell() {
       </div>
 
       {isOwner ? (
-        <OwnerDashboard orgId={orgId} userId={user.id} />
+        <OwnerDashboard orgId={orgId} />
       ) : (
-        <LawyerDashboard userId={user.id} />
+        <LawyerDashboard userId={user.id} orgId={orgId} />
       )}
     </div>
   );

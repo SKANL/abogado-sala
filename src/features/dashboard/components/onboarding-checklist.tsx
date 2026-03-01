@@ -1,6 +1,9 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, PartyPopper } from "lucide-react";
 import Link from "next/link";
 
 interface ChecklistItem {
@@ -25,6 +28,8 @@ export function OnboardingChecklist({
   hasClient,
   hasCase,
 }: OnboardingChecklistProps) {
+  const [hideCelebration, setHideCelebration] = useState(false);
+
   const items: ChecklistItem[] = [
     {
       label: "Crea tu primera plantilla",
@@ -49,7 +54,39 @@ export function OnboardingChecklist({
   const completedCount = items.filter((i) => i.done).length;
   const allDone = completedCount === items.length;
 
-  if (allDone) return null;
+  // Auto-dismiss the celebration banner after 6 seconds
+  useEffect(() => {
+    if (allDone) {
+      const timer = setTimeout(() => setHideCelebration(true), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [allDone]);
+
+  if (allDone) {
+    if (hideCelebration) return null;
+    return (
+      <Card className="border-emerald-200 bg-emerald-50/60 animate-in fade-in duration-500">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="text-emerald-600 shrink-0">
+            <PartyPopper className="h-8 w-8" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-emerald-800">¡Despacho configurado! 🎉</p>
+            <p className="text-sm text-emerald-700 mt-0.5">
+              Has completado todos los pasos de configuración. ¡Ya puedes aprovechar AbogadoSala al máximo!
+            </p>
+          </div>
+          <button
+            onClick={() => setHideCelebration(true)}
+            className="shrink-0 text-emerald-600 hover:text-emerald-800 text-lg leading-none font-medium"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-primary/20 bg-primary/5">

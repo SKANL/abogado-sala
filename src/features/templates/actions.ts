@@ -3,20 +3,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTemplateSchema, updateTemplateSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
-import { Result } from "@/types";
-import { revalidatePath } from "next/cache";
+import { Result, ActionState } from "@/types";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export async function createTemplateAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawData = Object.fromEntries(formData) as any;
   
   // Parse schema if it's a string (e.g. hidden input)
   if (typeof rawData.schema === 'string') {
       try {
           rawData.schema = JSON.parse(rawData.schema);
-      } catch (e) {
+      } catch {
           rawData.schema = {};
       }
   }
@@ -55,19 +57,21 @@ export async function createTemplateAction(
   }
 
   revalidatePath("/plantillas");
+  revalidateTag(CACHE_TAGS.templates, {});
   return { success: true, data: newTemplate };
 }
 
 export async function updateTemplateAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawData = Object.fromEntries(formData) as any;
 
   if (typeof rawData.schema === 'string') {
       try {
           rawData.schema = JSON.parse(rawData.schema);
-      } catch (e) {
+      } catch {
           // Keep original or fail validation
       }
   }
@@ -87,6 +91,7 @@ export async function updateTemplateAction(
   const supabase = await createClient();
 
   // Explicit type casting to satisfy Supabase types for JSONB
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatePayload : any = { ...updates };
 
   const { error, data: updatedTemplate } = await supabase
@@ -101,6 +106,8 @@ export async function updateTemplateAction(
   }
 
   revalidatePath("/plantillas");
+  revalidateTag(CACHE_TAGS.templates, {});
+  revalidateTag(CACHE_TAGS.templateDetail(id), {});
   return { success: true, data: updatedTemplate };
 }
 
@@ -130,6 +137,7 @@ export async function deleteTemplateAction(templateId: string): Promise<Result<v
     }
 
     revalidatePath("/plantillas");
+    revalidateTag(CACHE_TAGS.templates, {});
     return { success: true, data: undefined };
 }
 
@@ -169,6 +177,7 @@ export async function syncTemplateToCasesAction(templateId: string): Promise<Res
     const caseIds = activeCases.map(c => c.id);
     
     // Explicit type casting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatePayload: any = { template_snapshot: template.schema };
 
     const { error: updateError } = await supabase
@@ -180,5 +189,7 @@ export async function syncTemplateToCasesAction(templateId: string): Promise<Res
         return handleError(updateError);
     }
 
+    revalidatePath("/casos");
+    revalidateTag(CACHE_TAGS.cases, {});
     return { success: true, data: { updatedCount: caseIds.length } };
 }

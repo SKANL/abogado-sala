@@ -8,12 +8,12 @@ import { CompletionStep } from "./steps/completion-step";
 import { QuestionnaireStep } from "./steps/questionnaire-step";
 import { DocumentUploadSlot } from "./document-upload-slot";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, Lock, ChevronLeft } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Lock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { WIZARD_STEPS_METADATA, getWizardProgress } from "@/features/portal/config";
 
 interface PortalWizardProps {
@@ -23,9 +23,10 @@ interface PortalWizardProps {
   files: CasePublic['files'];
   orgName?: string;
   orgLogoUrl?: string;
+  orgConsentText?: string | null;
 }
 
-export function PortalWizard({ token, initialCaseData, clientName, files, orgName, orgLogoUrl }: PortalWizardProps) {
+export function PortalWizard({ token, initialCaseData, clientName, files, orgName, orgLogoUrl, orgConsentText }: PortalWizardProps) {
   const router = useRouter();
   
   // NOTE: Schema-driven would be more dynamic, but for now we map:
@@ -60,7 +61,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
   };
 
   const hasFileRequirements = files.length > 0;
-  const areAllFilesUploaded = hasFileRequirements && files.every((f: any) => f.status === 'uploaded' || f.status === 'exception');
+  const areAllFilesUploaded = hasFileRequirements && files.every((f) => f.status === 'uploaded' || f.status === 'exception');
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -70,10 +71,13 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
         {orgName && (
           <div className="flex items-center gap-2 mb-3">
             {orgLogoUrl ? (
-              <img
+              <Image
                 src={orgLogoUrl}
                 alt={orgName}
-                className="h-6 w-auto object-contain"
+                width={120}
+                height={24}
+                className="object-contain"
+                style={{ height: '24px', width: 'auto' }}
               />
             ) : null}
             <span className="text-sm font-medium text-muted-foreground">
@@ -117,7 +121,8 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
 
         {currentStep === 1 && (
           <ConsentStep 
-            onNext={() => handleStepComplete(2)} 
+            onNext={() => handleStepComplete(2)}
+            consentText={orgConsentText}
           />
         )}
 
@@ -139,7 +144,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
 
              <div className="grid gap-4">
                 {files.length > 0 ? (
-                    files.map((file: any) => (
+                    files.map((file) => (
                         <DocumentUploadSlot
                             key={file.id}
                             caseId={initialCaseData.id}
@@ -162,7 +167,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
                 {hasFileRequirements ? (
                   <p className="text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">
-                      {files.filter((f: any) => f.status === 'uploaded' || f.status === 'exception').length}
+                      {files.filter((f) => f.status === 'uploaded' || f.status === 'exception').length}
                     </span>
                     {" "}/{" "}
                     <span className="font-medium text-foreground">{files.length}</span>

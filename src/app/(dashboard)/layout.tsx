@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { OrgFetcherWrapper } from "@/components/layout/dashboard-wrapper/org-fetcher";
@@ -13,7 +14,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <OrgFetcherWrapper>
+    <Suspense>
+      <OrgFetcherWrapper>
         <SidebarProvider className="h-svh overflow-hidden">
         <AppSidebar />
         <main className="flex-1 min-h-0 w-full flex flex-col overflow-hidden relative">
@@ -35,6 +37,7 @@ export default function DashboardLayout({
             <MobileFab />
         </main>
         </SidebarProvider>
-    </OrgFetcherWrapper>
+      </OrgFetcherWrapper>
+    </Suspense>
   );
 }

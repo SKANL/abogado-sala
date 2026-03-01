@@ -20,8 +20,9 @@ export function AnimatedNumber({ value, duration = 800, className }: AnimatedNum
   useEffect(() => {
     // Respect prefers-reduced-motion
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setDisplayed(value);
-      return;
+      // Schedule outside of the synchronous effect body to avoid cascading renders
+      const id = requestAnimationFrame(() => setDisplayed(value));
+      return () => cancelAnimationFrame(id);
     }
 
     const animate = (now: number) => {

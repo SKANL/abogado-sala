@@ -29,9 +29,7 @@ export function CaseDistributionWidget({ data, total }: CaseDistributionWidgetPr
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
 
-  let currentAngle = 0;
-
-  // Enhance data with colors and percents
+  // Enhance data with colors and percents — use reduce to avoid mutable variable
   const chartData = data
     .filter(d => d.count > 0)
     .sort((a, b) => {
@@ -39,22 +37,21 @@ export function CaseDistributionWidget({ data, total }: CaseDistributionWidgetPr
         const order = Object.keys(statusConfig);
         return order.indexOf(a.status) - order.indexOf(b.status);
     })
-    .map(item => {
+    .reduce<(CaseStatusStat & typeof statusConfig[string] & { strokeLength: number; strokeDasharray: string; rotate: number })[]>((acc, item) => {
         const percent = item.count / total;
         const strokeLength = circumference * percent;
         const config = statusConfig[item.status] || { label: item.status, color: "bg-gray-300", fill: "#d1d5db" };
+        const prevAngle = acc.length > 0 ? acc[acc.length - 1].rotate / 360 + acc[acc.length - 1].strokeLength / circumference : 0;
         
-        const sector = {
+        acc.push({
             ...item,
             ...config,
             strokeLength,
             strokeDasharray: `${strokeLength} ${circumference}`,
-            rotate: currentAngle * 360, // Rotate in degrees
-        };
-        
-        currentAngle += percent;
-        return sector;
-    });
+            rotate: prevAngle * 360,
+        });
+        return acc;
+    }, []);
 
   return (
     <Card className="flex flex-col">
@@ -83,7 +80,7 @@ export function CaseDistributionWidget({ data, total }: CaseDistributionWidgetPr
                         strokeWidth={strokeWidth}
                     />
                 ) : (
-                    chartData.map((sector, i) => (
+                    chartData.map((sector) => (
                         <circle
                             key={sector.status}
                             cx={center}

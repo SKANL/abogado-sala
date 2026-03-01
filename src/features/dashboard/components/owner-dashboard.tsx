@@ -1,70 +1,41 @@
 
-import { Users, Briefcase, FileText, HardDrive, Activity } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { Users, Briefcase, FileText, HardDrive } from "lucide-react";
 import { LiveActivityFeed } from "./widgets/live-activity-feed";
 import { CompactTeamList, TeamMemberStat } from "./widgets/compact-team-list";
 import { CaseDistributionWidget } from "./widgets/case-distribution-widget";
 import { KpiCard } from "./widgets/kpi-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OnboardingChecklist } from "./onboarding-checklist";
+import {
+  getOrgDashboardKpis,
+  getOrgSettings,
+  getOrgTeam,
+  getOrgCaseDistribution,
+  getOrgAuditLogsWithActors,
+} from "@/lib/db/queries";
 
 interface OwnerDashboardProps {
     orgId: string;
-    userId: string;
 }
 
-export async function OwnerDashboard({ orgId, userId }: OwnerDashboardProps) {
-    const supabase = await createClient();
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-
-    // Parallel fetching for Owner KPIs (Global Scope)
-    const [
-        { count: clientCount },
-        { count: casesActiveCount },
-        { count: filesPendingCount },
-        { data: orgData },
-        { data: teamData },
-        { data: auditLogs },
-        { data: allCases },
-        { count: newClientsMonth },
-        { count: newCasesMonth },
-        { count: templateCount },
-    ] = await Promise.all([
-        supabase.from("clients").select("*", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "active"),
-        supabase.from("cases").select("*", { count: "exact", head: true }).eq("org_id", orgId).in("status", ["in_progress", "review"]),
-        supabase.from("case_files").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("organizations").select("storage_used, plan_tier").eq("id", orgId).single(),
-        supabase.from("profiles")
-            .select("id, full_name, avatar_url, role, updated_at, cases!cases_assigned_lawyer_id_fkey(count)")
-            .eq("org_id", orgId),
-        supabase.from("audit_logs")
-            .select("id, action, created_at, metadata, actor_id")
-            .eq("org_id", orgId)
-            .order("created_at", { ascending: false })
-            .limit(30)
-            .returns<any[]>(),
-        supabase.from("cases").select("status").eq("org_id", orgId),
-        supabase.from("clients").select("*", { count: "exact", head: true }).eq("org_id", orgId).gte("created_at", startOfMonth),
-        supabase.from("cases").select("*", { count: "exact", head: true }).eq("org_id", orgId).gte("created_at", startOfMonth),
-        supabase.from("templates").select("*", { count: "exact", head: true }).eq("org_id", orgId),
+export async function OwnerDashboard({ orgId }: OwnerDashboardProps) {
+    // All queries are cached — zero DB round trips on repeated navigation
+    const [kpis, orgData, teamData, allCases, { logs: auditLogs, actorsMap }] = await Promise.all([
+        getOrgDashboardKpis(orgId),
+        getOrgSettings(orgId),
+        getOrgTeam(orgId),
+        getOrgCaseDistribution(orgId),
+        getOrgAuditLogsWithActors(orgId),
     ]);
 
-    // Fetch details for actors in logs
-    const actorIds = Array.from(new Set(auditLogs?.map(l => l.actor_id).filter(Boolean) || []));
-    let actorsMap: Record<string, string> = {};
-    if (actorIds.length > 0) {
-        const { data: actors } = await supabase.from("profiles").select("id, full_name").in("id", actorIds);
-        actors?.forEach(a => {
-            if (a.full_name) actorsMap[a.id] = a.full_name;
-        });
-    }
+    const { clientCount, casesActiveCount, filesPendingCount, newClientsMonth, newCasesMonth, templateCount } = kpis;
 
     // Format Storage
     const storageBytes = orgData?.storage_used || 0;
     const storageGB = (storageBytes / (1024 * 1024 * 1024)).toFixed(2);
 
     // Format Team Stats
-    const teamMembers: TeamMemberStat[] = (teamData || []).map((p: any) => ({
+    const teamMembers: TeamMemberStat[] = (teamData || []).map((p) => ({
         id: p.id,
         full_name: p.full_name,
         avatar_url: p.avatar_url,

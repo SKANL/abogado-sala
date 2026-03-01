@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Archive, Trash2, RotateCcw, CheckCircle, FileArchive } from "lucide-react";
+import { MoreVertical, Archive, Trash2, RotateCcw, FileArchive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -47,7 +47,7 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
             } else {
                 toast.error(result.error);
             }
-        } catch (error) {
+        } catch {
             toast.error("Error al eliminar el expediente");
         } finally {
             setLoading(false);
@@ -69,7 +69,7 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
             } else {
                 toast.error(result.error);
             }
-        } catch (error) {
+        } catch {
             toast.error("Error al actualizar estado");
         } finally {
             setLoading(false);
@@ -87,7 +87,7 @@ export function CaseActionsDropdown({ caseId, currentStatus }: CaseActionsProps)
             } else {
                 toast.error(result.error);
             }
-        } catch (error) {
+        } catch {
             toast.error("Error al finalizar");
         } finally {
             setLoading(false);

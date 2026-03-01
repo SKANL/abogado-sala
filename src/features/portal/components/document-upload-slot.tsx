@@ -15,7 +15,7 @@ interface DocumentUploadSlotProps {
   fileId: string; // The database ID of the 'case_files' row
   category: string;
   description?: string | null;
-  status: "pending" | "uploaded" | "missing" | "rejected";
+  status: "pending" | "uploaded" | "missing" | "rejected" | "exception";
   token?: string; // Optional: Only for Portal usage
   onSuccess: () => void;
 }
@@ -35,39 +35,49 @@ export function DocumentUploadSlot({ caseId, fileId, category, description, stat
     
     setUploading(true);
     try {
-        const supabase = createClient();
-        const fileExt = file.name.split('.').pop();
-        // Secure path: case_id/file_id.ext ensures uniqueness and allows RLS optimization
-        const filePath = `${caseId}/${fileId}.${fileExt}`;
-        
-        // 1. Upload
-        const { error: uploadError } = await supabase.storage
-            .from('case-files') 
-            .upload(filePath, file, { upsert: true });
+        let filePath: string;
 
-        if (uploadError) throw uploadError;
-
-        // 2. Confirm
-        let result;
         if (token) {
-            // Portal Flow (Explicit Token)
-            result = await confirmPortalUploadAction(token, fileId, filePath, file.size);
+            // ── Portal flow (unauthenticated) ──────────────────────────────
+            // Upload via server-side API route that uses the service role key,
+            // because the portal has no Supabase session and the anon role
+            // cannot write to storage directly.
+            const body = new FormData();
+            body.append("token",  token);
+            body.append("fileId", fileId);
+            body.append("caseId", caseId);
+            body.append("file",   file);
+
+            const res = await fetch("/api/portal/upload", { method: "POST", body });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || "Error al subir archivo");
+            filePath = json.path;
+
+            // Confirm in DB
+            const result = await confirmPortalUploadAction(token, fileId, filePath, file.size);
+            if (!result.success) throw new Error(result.error || "Error confirmando carga");
         } else {
-            // Admin/Dashboard Flow (Session Cookie)
-            result = await confirmUploadAction(fileId, file.size, filePath);
-        }
-        
-        if (!result.success) {
-            throw new Error(result.error || "Error confirmando carga");
+            // ── Dashboard flow (authenticated session) ─────────────────────
+            const supabase = createClient();
+            const fileExt = file.name.split(".").pop();
+            filePath = `${caseId}/${fileId}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from("case-files")
+                .upload(filePath, file, { upsert: true });
+            if (uploadError) throw uploadError;
+
+            const result = await confirmUploadAction(fileId, file.size, filePath);
+            if (!result.success) throw new Error(result.error || "Error confirmando carga");
         }
 
         toast.success("Documento subido correctamente");
         setFile(null);
         onSuccess();
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Upload error:", err);
-        toast.error(err.message || "Error al subir documento");
+        toast.error(err instanceof Error ? err.message : "Error al subir documento");
     } finally {
         setUploading(false);
     }

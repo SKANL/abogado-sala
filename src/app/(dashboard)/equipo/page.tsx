@@ -6,10 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { InviteMemberDialog } from "@/features/org/components/invite-member-dialog";
 import { RevokeInvitationButton } from "@/features/org/components/revoke-invitation-button";
 import { InvitationLinkButton } from "@/features/org/components/invitation-link-button";
+import { MemberActionsMenu } from "@/features/org/components/member-actions-menu";
 import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { UsersRound } from "lucide-react";
+
 import { STATUS_LABELS } from "@/lib/constants";
+import { getOrgMembersWithEmail, getOrgPendingInvitations } from "@/lib/db/queries";
 
 // Human-readable labels for org roles.
 // Add new roles here as the system expands (paralegal, secretary, accountant, etc.)
@@ -28,17 +29,15 @@ export default async function TeamPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   const orgId = user?.app_metadata?.org_id;
+  const viewerRole = user?.app_metadata?.role as string ?? "member";
+  const viewerId = user?.id ?? "";
+  const canManage = viewerRole === "owner" || viewerRole === "admin";
 
-  // Use RPC to join profiles + auth.users → gets email without exposing auth.users
-  const { data: members } = orgId
-    ? await supabase.rpc("get_org_members_with_email", { p_org_id: orgId })
-    : { data: [] };
-
-  // Fetch pending invitations (if RLS allows, which it should for admins)
-  const { data: invitations } = await supabase
-      .from("invitations")
-      .select("*")
-      .eq("status", "pending");
+  // Both cached — revalidated by inviteMemberAction / updateMemberRoleAction etc.
+  const [members, invitations] = await Promise.all([
+    orgId ? getOrgMembersWithEmail(orgId) : Promise.resolve([]),
+    orgId ? getOrgPendingInvitations(orgId) : Promise.resolve([]),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -62,6 +61,7 @@ export default async function TeamPage() {
                             <TableHead className="hidden lg:table-cell">Email</TableHead>
                             <TableHead>Rol</TableHead>
                             <TableHead>Estado</TableHead>
+                            {canManage && <TableHead className="w-12"></TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -88,10 +88,22 @@ export default async function TeamPage() {
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant={member.status === 'active' ? 'default' : 'destructive'}>
+                                    <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
                                         {STATUS_LABELS[member.status] ?? member.status}
                                     </Badge>
                                 </TableCell>
+                                {canManage && (
+                                    <TableCell>
+                                        <MemberActionsMenu
+                                            memberId={member.id}
+                                            memberName={member.full_name ?? ""}
+                                            currentRole={member.role}
+                                            currentStatus={member.status ?? "active"}
+                                            viewerId={viewerId}
+                                            viewerRole={viewerRole}
+                                        />
+                                    </TableCell>
+                                )}
                             </TableRow>
                         ))}
                     </TableBody>
@@ -102,14 +114,14 @@ export default async function TeamPage() {
             <div className="md:hidden grid grid-cols-1 gap-2 p-4 bg-muted/20">
                 {members?.map((member) => (
                     <Card key={member.id} className="overflow-hidden">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                        <CardContent className="p-4 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-3 min-w-0">
                                 <Avatar>
                                     <AvatarImage src={member.avatar_url || ""} />
                                     <AvatarFallback>{member.full_name?.substring(0,2).toUpperCase()}</AvatarFallback>
                                 </Avatar>
-                                <div>
-                                    <div className="font-semibold">{member.full_name}</div>
+                                <div className="min-w-0">
+                                    <div className="font-semibold truncate">{member.full_name}</div>
                                     <div className="text-xs text-muted-foreground flex flex-col gap-0.5 mt-0.5">
                                         {member.email && <span className="truncate">{member.email}</span>}
                                         <div className="flex items-center gap-2">
@@ -121,9 +133,21 @@ export default async function TeamPage() {
                                     </div>
                                 </div>
                             </div>
-                            <Badge variant={member.status === 'active' ? 'default' : 'destructive'} className="h-6 text-xs">
-                                {STATUS_LABELS[member.status] ?? member.status}
-                            </Badge>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className="h-6 text-xs">
+                                    {STATUS_LABELS[member.status] ?? member.status}
+                                </Badge>
+                                {canManage && (
+                                    <MemberActionsMenu
+                                        memberId={member.id}
+                                        memberName={member.full_name ?? ""}
+                                        currentRole={member.role}
+                                        currentStatus={member.status ?? "active"}
+                                        viewerId={viewerId}
+                                        viewerRole={viewerRole}
+                                    />
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 ))}

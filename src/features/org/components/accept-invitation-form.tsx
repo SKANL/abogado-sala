@@ -17,7 +17,8 @@ import { Result } from "@/types";
 import { CheckCircle2, Building2 } from "lucide-react";
 import { FormFieldError } from "@/components/ui/form-field-error";
 
-const initialState: Result<any> = { success: false, error: "" };
+type AcceptInvitationData = { requiresEmailConfirm?: boolean };
+const initialState: Result<AcceptInvitationData> = { success: false, error: "" };
 
 interface AcceptInvitationFormProps {
   token: string;

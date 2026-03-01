@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Loader2, FileArchive, Download, AlertCircle } from "lucide-react";
@@ -27,22 +27,34 @@ interface ExportCasePanelProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface HistoryJob {
+  id: string;
+  status: string;
+  created_at: string;
+  result_url?: string | null;
+  error_message?: string | null;
+  type?: string;
+}
+
 export function ExportCasePanel({ caseId, open, onOpenChange }: ExportCasePanelProps) {
   const [loading, setLoading] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("idle"); // idle, pending, processing, completed, failed
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<HistoryJob[]>([]);
 
   const supabase = createClient();
+
+  const statusRef = React.useRef(status);
+  statusRef.current = status;
 
   // Load history when panel opens
   useEffect(() => {
     if (!open) return;
     
-    // Reset state for new export attempt
-    if (status === "completed" || status === "failed") {
+    // Reset state for new export attempt using ref to avoid dep cycle
+    if (statusRef.current === "completed" || statusRef.current === "failed") {
         setStatus("idle");
         setJobId(null);
         setResultUrl(null);
@@ -59,9 +71,9 @@ export function ExportCasePanel({ caseId, open, onOpenChange }: ExportCasePanelP
         .limit(10);
       
       if (data) {
-        setHistory(data);
+        setHistory(data as HistoryJob[]);
         // If there's an active job, resume watching it
-        const activeJob = data.find(j => j.status === 'pending' || j.status === 'processing');
+        const activeJob = (data as HistoryJob[]).find(j => j.status === 'pending' || j.status === 'processing');
         if (activeJob) {
           setJobId(activeJob.id);
           setStatus(activeJob.status);
@@ -131,9 +143,9 @@ export function ExportCasePanel({ caseId, open, onOpenChange }: ExportCasePanelP
         setStatus("failed");
         setErrorMsg(result.error || "No se pudo crear el trabajo de exportación");
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setStatus("failed");
-      setErrorMsg(e.message || "Error interno");
+      setErrorMsg(e instanceof Error ? e.message : "Error interno");
     } finally {
       setLoading(false);
     }
@@ -232,7 +244,7 @@ export function ExportCasePanel({ caseId, open, onOpenChange }: ExportCasePanelP
              {history.length === 0 ? (
                  <p className="text-sm text-muted-foreground italic">No hay exportaciones previas.</p>
              ) : (
-                 <ScrollArea className="h-[300px] pr-4">
+                 <ScrollArea className="h-75 pr-4">
                      <div className="space-y-3">
                          {history.map((job) => (
                              <div key={job.id} className="flex flex-col gap-2 p-3 bg-card border rounded-md text-sm shadow-sm">

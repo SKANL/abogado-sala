@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, startTransition } from "react";
 import { inviteMemberAction } from "@/features/org/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { Plus, CheckCircle2 } from "lucide-react";
 import { FormFieldError } from "@/components/ui/form-field-error";
 import { CopyableField } from "@/components/ui/copyable-field";
 
-const initialState: Result<any> = { success: false, error: "" };
+const initialState: Result<{ token: string }> = { success: false, error: "" };
 
 export function InviteMemberDialog() {
     const [open, setOpen] = useState(false);
@@ -25,12 +25,14 @@ export function InviteMemberDialog() {
             toast.success("Invitación creada");
             // Build the invitation link from the token
             const token = state.data.token;
-            if (token) {
-                const link = `${window.location.origin}/invitacion/${token}`;
-                setInvitationLink(link);
-            } else {
-                setOpen(false);
-            }
+            startTransition(() => {
+                if (token) {
+                    const link = `${window.location.origin}/invitacion/${token}`;
+                    setInvitationLink(link);
+                } else {
+                    setOpen(false);
+                }
+            });
         } else if (!state.success && state.error) {
             toast.error(state.error);
         }

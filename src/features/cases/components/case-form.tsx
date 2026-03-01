@@ -12,25 +12,32 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormFieldError } from "@/components/ui/form-field-error";
 
+interface TemplateField {
+    label?: string;
+    type?: string;
+    required?: boolean;
+    [key: string]: unknown;
+}
+
 interface CaseFormProps {
     clients: { id: string, full_name: string }[];
-    templates: { id: string, title: string, schema: any }[];
+    templates: { id: string, title: string, schema: Record<string, TemplateField> }[];
     preselectedClientId?: string;
 }
 
-const initialState: Result<any> = { success: false, error: "" };
+const initialState: Result<unknown> = { success: false, error: "" };
 
 export function CaseForm({ clients, templates, preselectedClientId }: CaseFormProps) {
     const [state, action, isPending] = useActionState(createCaseAction, initialState);
     const router = useRouter();
     const [selectedClientId, setSelectedClientId] = useState<string>(preselectedClientId ?? "");
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
-    const [templateData, setTemplateData] = useState<Record<string, any>>({});
+    const [templateData, setTemplateData] = useState<Record<string, unknown>>({});
     
     // Derived selected template schema
     const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
     const schema = selectedTemplate?.schema || {};
-    const fields = Object.entries(schema).map(([key, value]: [string, any]) => ({
+    const fields = Object.entries(schema).map(([key, value]: [string, TemplateField]) => ({
         id: key,
         ...value
     }));
@@ -38,14 +45,14 @@ export function CaseForm({ clients, templates, preselectedClientId }: CaseFormPr
     useEffect(() => {
         if (state.success) {
             toast.success("Expediente creado correctamente");
-            router.push(`/casos/${(state as any).data?.id}`);
+            router.push(`/casos/${(state.data as { id?: string })?.id}`);
             router.refresh();
         } else if (state.error) {
             toast.error(state.error);
         }
     }, [state, router]);
 
-    const handleFieldChange = (fieldId: string, value: any) => {
+    const handleFieldChange = (fieldId: string, value: unknown) => {
         setTemplateData(prev => ({
             ...prev,
             [fieldId]: value
@@ -135,7 +142,7 @@ export function CaseForm({ clients, templates, preselectedClientId }: CaseFormPr
                                     but we can collect initial expectation here or just show it's required */}
                                 {field.type === 'file' && (
                                     <div className="text-sm text-muted-foreground italic border p-2 rounded">
-                                        (El documento "{field.label}" será solicitado al cliente en el portal)
+                                        (El documento &quot;{field.label}&quot; será solicitado al cliente en el portal)
                                     </div>
                                 )}
                             </div>

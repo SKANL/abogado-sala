@@ -19,7 +19,7 @@ interface Props {
   avatarUrl: string | null;
 }
 
-const initialState: Result<any> = { success: false, error: "" };
+const initialState: Result<unknown> = { success: false, error: "" };
 
 export function ProfileForm({ userId, fullName, email, avatarUrl }: Props) {
   const [state, action, isPending] = useActionState(updateProfileAction, initialState);

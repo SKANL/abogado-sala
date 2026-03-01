@@ -4,7 +4,7 @@ import { PageHeaderSkeleton } from "@/components/ui/skeletons";
 
 function KanbanColumnSkeleton({ cards = 3 }: { cards?: number }) {
   return (
-    <div className="flex flex-col gap-3 min-w-[260px] flex-1">
+    <div className="flex flex-col gap-3 min-w-65 flex-1">
       {/* Column header */}
       <div className="flex items-center justify-between px-1">
         <Skeleton className="h-5 w-28" />

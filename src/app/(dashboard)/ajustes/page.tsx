@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OrgSettingsForm } from "@/features/org/components/org-settings-form";
+import { getOrgSettings } from "@/lib/db/queries";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -11,13 +12,12 @@ export default async function SettingsPage() {
   const orgId = user.app_metadata?.org_id as string;
   const role = (user.app_metadata?.role ?? "member") as string;
 
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("id, name, primary_color, logo_url")
-    .eq("id", orgId)
-    .single();
+  // Cached — revalidated by updateOrganizationAction
+  const org = await getOrgSettings(orgId);
 
   if (!org) redirect("/login");
+
+  const orgConsentText: string | null = org.consent_text ?? null;
 
   return (
     <div className="space-y-4">
@@ -33,6 +33,7 @@ export default async function SettingsPage() {
         primaryColor={org.primary_color}
         logoUrl={org.logo_url}
         isOwner={role === "owner"}
+        consentText={orgConsentText}
       />
     </div>
   );

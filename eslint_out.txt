@@ -1,0 +1,240 @@
+
+C:\code\WEB\astro\abogados\abogado-sala\src\app\(dashboard)\casos\[id]\page.tsx
+  138:63  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\app\(dashboard)\casos\kanban\page.tsx
+  43:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\app\(portal)\sala\[token]\page.tsx
+  24:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\app\api\portal\upload\route.ts
+  67:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\app\api\webhooks\stripe\route.ts
+   1:10  warning  'headers' is defined but never used       @typescript-eslint/no-unused-vars
+  24:17  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:17  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\common\image-uploader.tsx
+  80:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\layout\app-sidebar.tsx
+  78:61  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\layout\app-sidebar.tsx:78:61
+  76 |     organization.plan_status === "trialing" && organization.trial_ends_at
+  77 |       ? Math.max(0, Math.ceil(
+> 78 |           (new Date(organization.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+     |                                                             ^^^^^^^^^^ Cannot call impure function
+  79 |         ))
+  80 |       : null
+  81 |   );  react-hooks/purity
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\ui\animated-number.tsx
+  23:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\ui\animated-number.tsx:23:7
+  21 |     // Respect prefers-reduced-motion
+  22 |     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+> 23 |       setDisplayed(value);
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  24 |       return;
+  25 |     }
+  26 |  react-hooks/set-state-in-effect
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\ui\sidebar.tsx
+  611:26  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\ui\sidebar.tsx:611:26
+  609 |   // Random width between 50 to 90%.
+  610 |   const width = React.useMemo(() => {
+> 611 |     return `${Math.floor(Math.random() * 40) + 50}%`
+      |                          ^^^^^^^^^^^^^ Cannot call impure function
+  612 |   }, [])
+  613 |
+  614 |   return (  react-hooks/purity
+
+C:\code\WEB\astro\abogados\abogado-sala\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\auth\components\profile-form.tsx
+  22:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\cases\components\case-form.tsx
+  145:55  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  145:69  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\cases\components\export-case-panel.tsx
+  72:6  warning  React Hook useEffect has a missing dependency: 'status'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\cases\components\share-case-link-panel.tsx
+  126:0  error  Parsing error: '}' expected
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\clients\components\client-form.tsx
+  14:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\dashboard\components\owner-dashboard.tsx
+  22:47  warning  'userId' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\dashboard\components\widgets\case-distribution-widget.tsx
+  55:9   error    Error: Cannot reassign variable after render completes
+
+Reassigning `currentAngle` after render has completed can cause inconsistent behavior on subsequent renders. Consider using state instead.
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\dashboard\components\widgets\case-distribution-widget.tsx:55:9
+  53 |         };
+  54 |         
+> 55 |         currentAngle += percent;
+     |         ^^^^^^^^^^^^ Cannot reassign `currentAngle` after render completes
+  56 |         return sector;
+  57 |     });
+  58 |  react-hooks/immutability
+  86:44  warning  'i' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\dashboard\components\widgets\live-activity-feed.tsx
+  15:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\notifications\components\notifications-list.tsx
+  21:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\org\components\accept-invitation-form.tsx
+  20:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\org\components\invite-member-dialog.tsx
+  16:28  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  30:17  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\org\components\invite-member-dialog.tsx:30:17
+  28 |             if (token) {
+  29 |                 const link = `${window.location.origin}/invitacion/${token}`;
+> 30 |                 setInvitationLink(link);
+     |                 ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  31 |             } else {
+  32 |                 setOpen(false);
+  33 |             }  react-hooks/set-state-in-effect
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\org\components\org-settings-form.tsx
+  25:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\portal\components\document-upload-slot.tsx
+  78:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\portal\components\file-uploader-placeholder.tsx
+   5:10  warning  'confirmUploadAction' is defined but never used         @typescript-eslint/no-unused-vars
+   6:10  warning  'Button' is defined but never used                      @typescript-eslint/no-unused-vars
+   8:10  warning  'UploadCloud' is defined but never used                 @typescript-eslint/no-unused-vars
+   8:23  warning  'Check' is defined but never used                       @typescript-eslint/no-unused-vars
+   8:30  warning  'X' is defined but never used                           @typescript-eslint/no-unused-vars
+   8:33  warning  'Loader2' is defined but never used                     @typescript-eslint/no-unused-vars
+   9:10  warning  'Card' is defined but never used                        @typescript-eslint/no-unused-vars
+   9:16  warning  'CardContent' is defined but never used                 @typescript-eslint/no-unused-vars
+  18:50  warning  'onUploadSuccess' is defined but never used             @typescript-eslint/no-unused-vars
+  18:67  warning  'acceptedFileTypes' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  19:10  warning  'uploading' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  22:9   warning  'handleFileChange' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  28:9   warning  'uploadFile' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  53:15  warning  'data' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  75:21  error    Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\portal\components\portal-wizard.tsx
+   11:10  warning  'Card' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   11:16  warning  'CardContent' is defined but never used                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   11:29  warning  'CardHeader' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   11:41  warning  'CardTitle' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   11:52  warning  'CardDescription' is defined but never used                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+   12:35  warning  'AlertTitle' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   13:10  warning  'Info' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   64:70  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   74:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  144:38  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  167:41  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\portal\components\steps\completion-step.tsx
+  4:29  warning  'CardHeader' is defined but never used       @typescript-eslint/no-unused-vars
+  4:41  warning  'CardTitle' is defined but never used        @typescript-eslint/no-unused-vars
+  4:52  warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  5:10  warning  'Button' is defined but never used           @typescript-eslint/no-unused-vars
+  6:24  warning  'Home' is defined but never used             @typescript-eslint/no-unused-vars
+  7:8   warning  'Link' is defined but never used             @typescript-eslint/no-unused-vars
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\portal\components\steps\questionnaire-step.tsx
+  17:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:15  warning  '_' is defined but never used             @typescript-eslint/no-unused-vars
+  29:35  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:33  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:15  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\templates\components\template-builder.tsx
+   46:17  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+   58:67  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+   79:5   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\code\WEB\astro\abogados\abogado-sala\src\features\templates\components\template-builder.tsx:79:5
+  77 |   useEffect(() => {
+  78 |     if (!isMounted.current) { isMounted.current = true; return; }
+> 79 |     setIsDirty(true);
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  80 |   }, [title, scope, fields]);
+  81 |
+  82 |   // Warn user before leaving with unsaved changes  react-hooks/set-state-in-effect
+  148:29  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\hooks\use-media-query.ts
+  13:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\code\WEB\astro\abogados\abogado-sala\src\hooks\use-media-query.ts:13:5
+  11 |     const result = matchMedia(query);
+  12 |     result.addEventListener("change", onChange);
+> 13 |     setValue(result.matches);
+     |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  14 |
+  15 |     return () => result.removeEventListener("change", onChange);
+  16 |   }, [query]);  react-hooks/set-state-in-effect
+
+C:\code\WEB\astro\abogados\abogado-sala\src\hooks\use-realtime-smart-sync.ts
+   6:10  warning  'toast' is defined but never used         @typescript-eslint/no-unused-vars
+  17:25  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\code\WEB\astro\abogados\abogado-sala\src\lib\db\queries.ts
+  404:7  error  'actorsMap' is never reassigned. Use 'const' instead  prefer-const
+
+C:\code\WEB\astro\abogados\abogado-sala\src\lib\services\job-service.ts
+  2:10  warning  'ERROR_CODES' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 79 problems (44 errors, 35 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

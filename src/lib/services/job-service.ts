@@ -1,5 +1,4 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { ERROR_CODES } from "@/lib/utils/error-handler";
 
 export async function createJob(
     supabase: SupabaseClient,
@@ -7,7 +6,7 @@ export async function createJob(
         orgId: string;
         requesterId: string;
         type: 'zip_export' | 'report_gen';
-        metadata?: any;
+        metadata?: Record<string, unknown>;
     }
 ) {
     const { data, error } = await supabase

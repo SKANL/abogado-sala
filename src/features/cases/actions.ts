@@ -3,23 +3,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { createCaseSchema, updateCaseSchema } from "@/lib/schemas/backend-contracts";
 import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
-import { Result } from "@/types";
-import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { Result, ActionState } from "@/types";
+import type { Json } from "@/lib/supabase/database.types";
+import { revalidatePath, revalidateTag } from "next/cache";
 import crypto from "crypto";
 import { logActivity } from "@/lib/services/audit-service";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 
 export async function createCaseAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawData = Object.fromEntries(formData) as any;
   
   // Handle JSON parsing for template_snapshot if passed as string
   if (typeof rawData.template_snapshot === 'string') {
       try {
           rawData.template_snapshot = JSON.parse(rawData.template_snapshot);
-      } catch (e) {
+      } catch {
           rawData.template_snapshot = {};
       }
   }
@@ -27,7 +29,7 @@ export async function createCaseAction(
   if (typeof rawData.questionnaire_answers === 'string') {
       try {
           rawData.questionnaire_answers = JSON.parse(rawData.questionnaire_answers);
-      } catch (e) {
+      } catch {
           rawData.questionnaire_answers = {};
       }
   }
@@ -66,6 +68,8 @@ export async function createCaseAction(
         .eq("id", parse.data.client_id);
       
       revalidatePath("/clientes");
+      revalidateTag(CACHE_TAGS.clients, {});
+      revalidateTag(CACHE_TAGS.clientDetail(parse.data.client_id), {});
   }
 
   // 2. Create the case
@@ -76,7 +80,7 @@ export async function createCaseAction(
       org_id,
       token,
       current_step_index: 0,
-      template_snapshot: parse.data.template_snapshot as any,
+      template_snapshot: (parse.data.template_snapshot ?? null) as Json,
       template_id: parse.data.template_id || null,
     })
     .select()
@@ -87,7 +91,9 @@ export async function createCaseAction(
   }
 
   revalidatePath("/casos");
+  revalidateTag(CACHE_TAGS.cases, {});
   revalidatePath(`/clientes/${parse.data.client_id}`);
+  revalidateTag(CACHE_TAGS.clientDetail(parse.data.client_id), {});
 
   // Log Activity
   await logActivity({
@@ -95,22 +101,23 @@ export async function createCaseAction(
       entityType: 'case',
       entityId: newCase.id,
       orgId: org_id,
-      metadata: { case_title: (newCase.template_snapshot as any)?.title || 'Nuevo Caso' }
+      metadata: { case_title: (newCase.template_snapshot as Record<string, unknown>)?.title as string || 'Nuevo Caso' }
   });
 
   return { success: true, data: newCase };
 }
 
 export async function updateCaseAction(
-  prevState: any,
+  prevState: ActionState,
   formData: FormData
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawData = Object.fromEntries(formData) as any;
   
   if (typeof rawData.template_snapshot === 'string') {
       try {
           rawData.template_snapshot = JSON.parse(rawData.template_snapshot);
-      } catch (e) {
+      } catch {
          // keep original if parse fails, validation will likely fail if schema expects object
       }
   }
@@ -133,7 +140,9 @@ export async function updateCaseAction(
     .from("cases")
     .update({
         ...updates,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         template_snapshot: (updates as any).template_snapshot 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
     .eq("id", case_id)
     .select()
@@ -144,6 +153,7 @@ export async function updateCaseAction(
   }
   
   revalidatePath(`/casos/${case_id}`);
+  revalidateTag(CACHE_TAGS.caseDetail(case_id), {});
   return { success: true, data: updatedCase };
 }
 
@@ -169,7 +179,7 @@ export async function confirmUploadAction(
   fileId: string,
   size: number,
   key: string
-): Promise<Result<any>> {
+): Promise<Result<unknown>> {
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("confirm_file_upload", {
@@ -268,6 +278,7 @@ export async function deleteCaseAction(caseId: string): Promise<Result<void>> {
     if (count === 0) return { success: false, error: "No se pudo eliminar (Permisos o No encontrado)", code: ERROR_CODES.VAL_NOT_FOUND };
 
     revalidatePath("/casos");
+    revalidateTag(CACHE_TAGS.cases, {});
     return { success: true, data: undefined };
 }
 
@@ -286,14 +297,14 @@ export async function getSignedFileUrlAction(filePath: string): Promise<Result<s
     }
 
     return { success: true, data: data.signedUrl };
-  } catch (error) {
+  } catch {
      return { success: false, error: "Error interno" };
   }
 }
 
 import { createJob } from "@/lib/services/job-service";
 
-export async function finalizeCaseAction(caseId: string): Promise<Result<any>> {
+export async function finalizeCaseAction(caseId: string): Promise<Result<{ message: string; job_id?: string }>> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -333,6 +344,8 @@ export async function finalizeCaseAction(caseId: string): Promise<Result<any>> {
     });
 
     revalidatePath("/casos");
+    revalidateTag(CACHE_TAGS.cases, {});
+    revalidateTag(CACHE_TAGS.caseDetail(caseId), {});
     return { success: true, data: { message: "Procesando descarga...", job_id: jobId } };
 }
 
@@ -360,8 +373,9 @@ export async function requestZipExportAction(caseId: string): Promise<Result<{ j
         });
 
         return { success: true, data: { job_id: job.id } };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Failed to create zip job", e);
-        return { success: false, error: e.message || "Error al solicitar exportación" };
+        const msg = e instanceof Error ? e.message : "Error al solicitar exportación";
+        return { success: false, error: msg };
     }
 }

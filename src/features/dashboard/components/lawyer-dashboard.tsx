@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Briefcase, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { QuickActions } from "./widgets/quick-actions";
 import { DashboardRealtimeListener } from "./dashboard-realtime-listener";
 import { STATUS_CLASSES } from "@/lib/constants";
 import Link from "next/link";
+import { getLawyerDashboardData } from "@/lib/db/queries";
 
 interface LawyerDashboardProps {
     userId: string;
+    orgId: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -20,26 +21,9 @@ const STATUS_LABELS: Record<string, string> = {
     completed: "Completado",
 };
 
-export async function LawyerDashboard({ userId }: LawyerDashboardProps) {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    const orgId = user?.app_metadata?.org_id;
-
-    // Active cases count — assigned to current user
-    const { count: myCasesCount } = await supabase
-        .from("cases")
-        .select("*", { count: "exact", head: true })
-        .eq("assigned_to", userId)
-        .in("status", ["in_progress", "review"]);
-
-    // Last 5 cases touched by this user (across all statuses)
-    const { data: recentCases } = await supabase
-        .from("cases")
-        .select("id, token, status, updated_at, clients(full_name)")
-        .eq("assigned_to", userId)
-        .order("updated_at", { ascending: false })
-        .limit(5);
+export async function LawyerDashboard({ userId, orgId }: LawyerDashboardProps) {
+    // Single cached call replaces 2 queries + getUser
+    const { myCasesCount, recentCases } = await getLawyerDashboardData(userId, orgId);
 
     return (
         <div className="space-y-6">

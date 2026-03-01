@@ -18,7 +18,7 @@ export function NotificationsList({ isSheet }: NotificationsListProps) {
     const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
     const router = useRouter();
 
-    const handleNotificationClick = (n: any) => {
+    const handleNotificationClick = (n: { id: string; read: boolean; metadata?: { link?: string; external?: boolean } }) => {
         if (!n.read) markAsRead(n.id);
         if (n.metadata?.link) {
             if (n.metadata.external || n.metadata.link.startsWith('http')) {
@@ -70,7 +70,7 @@ export function NotificationsList({ isSheet }: NotificationsListProps) {
                     No tienes notificaciones.
                 </div>
             ) : (
-                <ScrollArea className={cn(isSheet ? "flex-1 h-full" : "h-[300px]")}>
+                <ScrollArea className={cn(isSheet ? "flex-1 h-full" : "h-75")}>
                     <div className="grid">
                         {notifications.map((n) => (
                             <div 
