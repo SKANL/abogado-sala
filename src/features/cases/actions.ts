@@ -9,6 +9,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import crypto from "crypto";
 import { logActivity } from "@/lib/services/audit-service";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { createJob } from "@/lib/services/job-service";
 
 export async function createCaseAction(
   prevState: ActionState,
@@ -80,6 +81,7 @@ export async function createCaseAction(
       org_id,
       token,
       current_step_index: 0,
+      created_by: user!.id,
       template_snapshot: (parse.data.template_snapshot ?? null) as Json,
       template_id: parse.data.template_id || null,
     })
@@ -251,7 +253,6 @@ export async function deleteFileAction(fileId: string): Promise<Result<void>> {
 
     return { success: true, data: undefined };
 }
-// ... existing code ...
 
 export async function deleteCaseAction(caseId: string): Promise<Result<void>> {
     const supabase = await createClient();
@@ -301,8 +302,6 @@ export async function getSignedFileUrlAction(filePath: string): Promise<Result<s
      return { success: false, error: "Error interno" };
   }
 }
-
-import { createJob } from "@/lib/services/job-service";
 
 export async function finalizeCaseAction(caseId: string): Promise<Result<{ message: string; job_id?: string }>> {
     const supabase = await createClient();

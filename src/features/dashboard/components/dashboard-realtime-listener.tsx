@@ -3,8 +3,9 @@
 import { useRealtimeSmartSync } from "@/hooks/use-realtime-smart-sync";
 
 interface DashboardRealtimeListenerProps {
-  userId: string;
-  orgId?: string;
+  /** Unused – kept for API compatibility; safe to pass from LawyerDashboard */
+  userId?: string;
+  orgId: string;
 }
 
 export function DashboardRealtimeListener({ orgId }: DashboardRealtimeListenerProps) {
@@ -16,8 +17,8 @@ export function DashboardRealtimeListener({ orgId }: DashboardRealtimeListenerPr
     channelName: 'dashboard-cases',
     table: 'cases',
     event: '*', // Insert, Update, Delete
-    filter: orgId ? `org_id=eq.${orgId}` : undefined,
-    queryKey: ['dashboard-stats'], 
+    // No queryKey → falls into router.refresh() branch → re-renders Server Component dashboards
+    filter: `org_id=eq.${orgId}`,
   });
 
   return null; 

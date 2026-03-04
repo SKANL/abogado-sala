@@ -16,12 +16,13 @@
  */
 export const CACHE_TAGS = {
   // Lists
-  cases:         "cases",
-  clients:       "clients",
-  templates:     "templates",
-  team:          "team",
-  notifications: "notifications",
-  dashboard:     "dashboard",
+  cases:            "cases",
+  clients:          "clients",
+  templates:        "templates",
+  team:             "team",
+  notifications:    "notifications",
+  dashboard:        "dashboard",
+  deletionRequests: "deletion-requests",
 
   // Instance helpers
   caseDetail:    (id: string)      => `case-${id}`,

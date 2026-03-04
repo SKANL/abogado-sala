@@ -166,6 +166,7 @@ export type Database = {
           assigned_to: string | null
           client_id: string
           created_at: string
+          created_by: string | null
           current_step_index: number
           expires_at: string
           id: string
@@ -181,6 +182,7 @@ export type Database = {
           assigned_to?: string | null
           client_id: string
           created_at?: string
+          created_by?: string | null
           current_step_index?: number
           expires_at?: string
           id?: string
@@ -196,6 +198,7 @@ export type Database = {
           assigned_to?: string | null
           client_id?: string
           created_at?: string
+          created_by?: string | null
           current_step_index?: number
           expires_at?: string
           id?: string
@@ -220,6 +223,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -285,6 +295,70 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deletion_requests: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_label: string
+          entity_type: string
+          id: string
+          org_id: string
+          reason: string | null
+          requested_by: string
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_label: string
+          entity_type: string
+          id?: string
+          org_id: string
+          reason?: string | null
+          requested_by: string
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_label?: string
+          entity_type?: string
+          id?: string
+          org_id?: string
+          reason?: string | null
+          requested_by?: string
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deletion_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deletion_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deletion_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -444,6 +518,8 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
+          members_can_see_all_cases: boolean
+          members_can_see_all_clients: boolean
           name: string
           plan_status: Database["public"]["Enums"]["plan_status"]
           plan_tier: Database["public"]["Enums"]["plan_tier"]
@@ -452,12 +528,15 @@ export type Database = {
           storage_used: number
           stripe_customer_id: string | null
           trial_ends_at: string | null
+          whatsapp_template: string | null
         }
         Insert: {
           consent_text?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
+          members_can_see_all_cases?: boolean
+          members_can_see_all_clients?: boolean
           name: string
           plan_status?: Database["public"]["Enums"]["plan_status"]
           plan_tier?: Database["public"]["Enums"]["plan_tier"]
@@ -466,12 +545,15 @@ export type Database = {
           storage_used?: number
           stripe_customer_id?: string | null
           trial_ends_at?: string | null
+          whatsapp_template?: string | null
         }
         Update: {
           consent_text?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
+          members_can_see_all_cases?: boolean
+          members_can_see_all_clients?: boolean
           name?: string
           plan_status?: Database["public"]["Enums"]["plan_status"]
           plan_tier?: Database["public"]["Enums"]["plan_tier"]
@@ -480,6 +562,7 @@ export type Database = {
           storage_used?: number
           stripe_customer_id?: string | null
           trial_ends_at?: string | null
+          whatsapp_template?: string | null
         }
         Relationships: []
       }

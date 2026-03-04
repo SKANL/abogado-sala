@@ -26,5 +26,14 @@ export function CaseRealtimeListener({ caseId }: CaseRealtimeListenerProps) {
     debounceMs: 1500, // status changes are rare, generous debounce
   });
 
+  // Case notes: collaborators see new notes without a full-page reload
+  useRealtimeSmartSync({
+    channelName: `case-${caseId}-notes`,
+    table: 'case_notes',
+    filter: `case_id=eq.${caseId}`,
+    event: '*',
+    debounceMs: 800,
+  });
+
   return null;
 }

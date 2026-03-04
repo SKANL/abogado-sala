@@ -29,7 +29,7 @@ export function useNotifications() {
   }, [supabase]);
 
   // 2. Fetch with React Query (SSOT)
-  const { data: notifications = [], isLoading: loading, refetch } = useQuery({
+  const { data: notifications = [], isLoading: loading } = useQuery({
     queryKey: ['notifications', userId],
     queryFn: async () => {
       if (!userId) return [];
@@ -69,7 +69,7 @@ export function useNotifications() {
     // For now we'll do simple async update + refetch triggers.
     
     await supabase.from('notifications').update({ read: true }).eq('id', id);
-    refetch(); // Ensure UI sync
+    // Realtime subscription (useRealtimeSmartSync above) invalidates the query automatically
   };
 
   const markAllAsRead = async () => {
@@ -79,7 +79,7 @@ export function useNotifications() {
       .update({ read: true })
       .eq('user_id', userId)
       .eq('read', false);
-    refetch();
+    // Realtime subscription handles cache invalidation
   };
 
   return {

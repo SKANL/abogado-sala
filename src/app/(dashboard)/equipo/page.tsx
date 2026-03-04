@@ -10,7 +10,8 @@ import { MemberActionsMenu } from "@/features/org/components/member-actions-menu
 import { PageHeader } from "@/components/ui/page-header";
 
 import { STATUS_LABELS } from "@/lib/constants";
-import { getOrgMembersWithEmail, getOrgPendingInvitations } from "@/lib/db/queries";
+import { getOrgMembersWithEmail, getOrgPendingInvitations, getDeletionRequests } from "@/lib/db/queries";
+import { DeletionRequestsPanel } from "@/features/org/components/deletion-requests-panel";
 
 // Human-readable labels for org roles.
 // Add new roles here as the system expands (paralegal, secretary, accountant, etc.)
@@ -33,10 +34,11 @@ export default async function TeamPage() {
   const viewerId = user?.id ?? "";
   const canManage = viewerRole === "owner" || viewerRole === "admin";
 
-  // Both cached — revalidated by inviteMemberAction / updateMemberRoleAction etc.
-  const [members, invitations] = await Promise.all([
+  // All cached — revalidated by inviteMemberAction / updateMemberRoleAction etc.
+  const [members, invitations, deletionRequests] = await Promise.all([
     orgId ? getOrgMembersWithEmail(orgId) : Promise.resolve([]),
     orgId ? getOrgPendingInvitations(orgId) : Promise.resolve([]),
+    canManage && orgId ? getDeletionRequests(orgId) : Promise.resolve([]),
   ]);
 
   return (
@@ -214,6 +216,13 @@ export default async function TeamPage() {
                 </CardContent>
            </Card>
        )}
+
+      {/* Admin: deletion requests review panel */}
+      {canManage && (
+        <DeletionRequestsPanel
+          requests={(deletionRequests as Parameters<typeof DeletionRequestsPanel>[0]['requests'])}
+        />
+      )}
     </div>
   );
 }

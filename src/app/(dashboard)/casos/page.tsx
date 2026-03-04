@@ -5,28 +5,56 @@ import { Plus, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { CasesTable } from "@/features/cases/components/cases-table";
 import { PageHeader } from "@/components/ui/page-header";
-import { getCasesList } from "@/lib/db/queries";
+import { getCasesList, getOrgSettings, type CasesViewMode } from "@/lib/db/queries";
+import { CasesListRealtime } from "@/features/cases/components/cases-list-realtime";
+import { CasesViewToggle } from "@/features/cases/components/cases-view-toggle";
 
-export default async function CasesPage() {
+export default async function CasesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const role = user?.app_metadata?.role ?? "member";
+  const orgId = user?.app_metadata?.org_id;
+  const userId = user?.id;
   const isMember = role === "member";
 
-  // Cached: zero DB hit on repeated navigation within stale window
-  const cases = await getCasesList(
-    user?.app_metadata?.org_id,
-    user?.id,
-    isMember
-  );
+  const { view: rawView } = await searchParams;
+
+  // For admins: always show all. For members: respect org setting + default to 'assigned'
+  let allowAll = !isMember;
+  if (isMember) {
+    const orgSettings = await getOrgSettings(orgId);
+    allowAll = orgSettings?.members_can_see_all_cases ?? false;
+  }
+
+  const validViews: CasesViewMode[] = ["assigned", "mine", "all"];
+  const requestedView = validViews.includes(rawView as CasesViewMode)
+    ? (rawView as CasesViewMode)
+    : null;
+
+  // Enforce: member cannot see 'all' if not allowed
+  const view: CasesViewMode = isMember
+    ? requestedView === "all" && !allowAll
+      ? "assigned"
+      : requestedView ?? "assigned"
+    : "all";
+
+  const cases = await getCasesList(orgId, userId, view);
 
   return (
     <div className="space-y-4">
+      {orgId && <CasesListRealtime orgId={orgId} />}
       <PageHeader
         title="Expedientes"
         description="Gestiona los trámites en curso."
         action={
           <div className="flex items-center gap-2">
+            {isMember && (
+              <CasesViewToggle currentView={view} allowAll={allowAll} />
+            )}
             {/* Toggle to Kanban view */}
             <Button asChild variant="outline" size="sm">
               <Link href="/casos/kanban">

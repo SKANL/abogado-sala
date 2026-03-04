@@ -16,7 +16,7 @@ import { CaseNotes } from "@/features/cases/components/case-notes";
 import { CaseAssigneeSelector } from "@/features/cases/components/case-assignee-selector";
 import { ShareCaseButtons } from "@/features/cases/components/share-case-buttons";
 import { getStepName, getWizardProgress } from "@/features/portal/config";
-import { getCaseById, getOrgTeam, getCaseNotes } from "@/lib/db/queries";
+import { getCaseById, getOrgTeam, getCaseNotes, getOrgSettings } from "@/lib/db/queries";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -28,15 +28,28 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   const orgId = user?.app_metadata?.org_id as string;
 
   // Parallel fetch — all cached, revalidated by Server Actions
-  const [{ data: c, error }, teamMembers, rawNotes] = await Promise.all([
+  const [{ data: c, error }, teamMembers, rawNotes, orgSettings] = await Promise.all([
     getCaseById(id, orgId),
     isOwnerAdmin ? getOrgTeam(orgId) : Promise.resolve([]),
     getCaseNotes(id),
+    getOrgSettings(orgId),
   ]);
 
   if (error || !c) notFound();
 
   const notes = rawNotes.map((n) => ({ ...n, author: Array.isArray(n.author) ? n.author[0] ?? null : n.author }));
+
+  // Map team members with active-case workload count
+  const mappedTeam = teamMembers.map((m) => {
+    const casesData = m.cases as { count: number }[] | undefined;
+    return {
+      id: m.id,
+      full_name: m.full_name,
+      avatar_url: m.avatar_url,
+      role: m.role,
+      activeCases: casesData?.[0]?.count ?? 0,
+    };
+  });
 
   const stepIdx = c.current_step_index ?? 0;
   const progressPct = getWizardProgress(stepIdx);
@@ -81,8 +94,18 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ShareCaseButtons token={c.token} />
-          <CaseActionsDropdown caseId={c.id} currentStatus={c.status} />
+          <ShareCaseButtons
+            token={c.token}
+            clientName={c.client?.full_name ?? undefined}
+            orgName={orgSettings?.name ?? undefined}
+            whatsappTemplate={orgSettings?.whatsapp_template ?? null}
+          />
+                <CaseActionsDropdown
+                  caseId={c.id}
+                  currentStatus={c.status}
+                  isOwnerAdmin={isOwnerAdmin}
+                  caseLabel={c.client?.full_name ?? c.token}
+                />
         </div>
       </div>
 
@@ -240,7 +263,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                 <CaseAssigneeSelector
                   caseId={id}
                   currentAssigneeId={c.assigned_to ?? null}
-                  teamMembers={teamMembers}
+                  teamMembers={mappedTeam}
                   canAssign={isOwnerAdmin}
                 />
               </CardContent>

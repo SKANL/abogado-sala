@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Briefcase, ArrowRight } from "lucide-react";
+import { Briefcase, ArrowRight, Users, FileWarning, Clock } from "lucide-react";
 import { QuickActions } from "./widgets/quick-actions";
 import { DashboardRealtimeListener } from "./dashboard-realtime-listener";
 import { STATUS_CLASSES } from "@/lib/constants";
@@ -19,26 +19,81 @@ const STATUS_LABELS: Record<string, string> = {
     in_progress: "En Progreso",
     review: "En Revisión",
     completed: "Completado",
+    archived: "Archivado",
+};
+
+const REQUEST_STATUS_LABELS: Record<string, string> = {
+    pending: "Pendiente",
+    approved: "Aprobada",
+    rejected: "Rechazada",
+};
+
+const REQUEST_STATUS_CLASSES: Record<string, string> = {
+    pending: "border-amber-500 text-amber-600",
+    approved: "border-green-500 text-green-600",
+    rejected: "border-red-500 text-red-600",
 };
 
 export async function LawyerDashboard({ userId, orgId }: LawyerDashboardProps) {
-    // Single cached call replaces 2 queries + getUser
-    const { myCasesCount, recentCases } = await getLawyerDashboardData(userId, orgId);
+    const {
+        myCasesCount,
+        totalCases,
+        statusBreakdown,
+        recentCases,
+        assignedClientsCount,
+        pendingDocsCount,
+        myPendingDeletionRequests,
+    } = await getLawyerDashboardData(userId, orgId);
 
     return (
         <div className="space-y-6">
             <DashboardRealtimeListener userId={userId} orgId={orgId} />
 
             {/* KPIs */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Mis Expedientes Activos</CardTitle>
+                        <CardTitle className="text-sm font-medium">Expedientes Activos</CardTitle>
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{myCasesCount ?? 0}</div>
-                        <p className="text-xs text-muted-foreground">En progreso o en revisión</p>
+                        <div className="text-2xl font-bold">{myCasesCount}</div>
+                        <p className="text-xs text-muted-foreground">{totalCases} en total</p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Clientes Asignados</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{assignedClientsCount}</div>
+                        <p className="text-xs text-muted-foreground">
+                            <Link href="/clientes?view=mine" className="hover:underline">Ver mis clientes</Link>
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Docs Pendientes</CardTitle>
+                        <FileWarning className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pendingDocsCount}</div>
+                        <p className="text-xs text-muted-foreground">Expedientes con archivos pendientes</p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">En Revisión</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{statusBreakdown["review"] ?? 0}</div>
+                        <p className="text-xs text-muted-foreground">Esperando aprobación</p>
                     </CardContent>
                 </Card>
             </div>
@@ -95,6 +150,54 @@ export async function LawyerDashboard({ userId, orgId }: LawyerDashboardProps) {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Status Breakdown */}
+            {totalCases > 0 && (
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Distribución por Estado</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-3">
+                            {Object.entries(statusBreakdown).map(([status, count]) => (
+                                <div key={status} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                                    <span className="text-sm text-muted-foreground">{STATUS_LABELS[status] ?? status}</span>
+                                    <Badge variant="outline" className={STATUS_CLASSES[status] ?? ""}>
+                                        {count}
+                                    </Badge>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* My Deletion Requests */}
+            {myPendingDeletionRequests.length > 0 && (
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Mis Solicitudes de Eliminación</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="divide-y">
+                            {myPendingDeletionRequests.map((req) => (
+                                <li key={req.id} className="flex items-center justify-between py-2">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium truncate">{req.entity_label}</p>
+                                        <p className="text-xs text-muted-foreground capitalize">{req.entity_type}</p>
+                                    </div>
+                                    <Badge
+                                        variant="outline"
+                                        className={`ml-2 shrink-0 text-xs ${REQUEST_STATUS_CLASSES[req.status] ?? ""}`}
+                                    >
+                                        {REQUEST_STATUS_LABELS[req.status] ?? req.status}
+                                    </Badge>
+                                </li>
+                            ))}
+                        </ul>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }

@@ -1,18 +1,22 @@
 
-import { Users, Briefcase, FileText, HardDrive } from "lucide-react";
+import { Users, Briefcase, FileText, HardDrive, Inbox } from "lucide-react";
 import { LiveActivityFeed } from "./widgets/live-activity-feed";
 import { CompactTeamList, TeamMemberStat } from "./widgets/compact-team-list";
 import { CaseDistributionWidget } from "./widgets/case-distribution-widget";
 import { KpiCard } from "./widgets/kpi-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OnboardingChecklist } from "./onboarding-checklist";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Link from "next/link";
 import {
   getOrgDashboardKpis,
   getOrgSettings,
   getOrgTeam,
   getOrgCaseDistribution,
   getOrgAuditLogsWithActors,
+  getDeletionRequests,
 } from "@/lib/db/queries";
+import { DashboardRealtimeListener } from "./dashboard-realtime-listener";
 
 interface OwnerDashboardProps {
     orgId: string;
@@ -20,13 +24,16 @@ interface OwnerDashboardProps {
 
 export async function OwnerDashboard({ orgId }: OwnerDashboardProps) {
     // All queries are cached — zero DB round trips on repeated navigation
-    const [kpis, orgData, teamData, allCases, { logs: auditLogs, actorsMap }] = await Promise.all([
+    const [kpis, orgData, teamData, allCases, { logs: auditLogs, actorsMap }, allDeletionRequests] = await Promise.all([
         getOrgDashboardKpis(orgId),
         getOrgSettings(orgId),
         getOrgTeam(orgId),
         getOrgCaseDistribution(orgId),
         getOrgAuditLogsWithActors(orgId),
+        getDeletionRequests(orgId),
     ]);
+
+    const pendingDeletionCount = (allDeletionRequests ?? []).filter((r) => r.status === "pending").length;
 
     const { clientCount, casesActiveCount, filesPendingCount, newClientsMonth, newCasesMonth, templateCount } = kpis;
 
@@ -54,12 +61,26 @@ export async function OwnerDashboard({ orgId }: OwnerDashboardProps) {
 
   return (
     <div className="space-y-4">
+      <DashboardRealtimeListener orgId={orgId} />
       {/* Onboarding checklist — visible only when org has no data yet */}
       <OnboardingChecklist
         hasTemplate={(templateCount ?? 0) > 0}
         hasClient={(clientCount ?? 0) > 0}
         hasCase={(allCases?.length ?? 0) > 0}
       />
+
+      {/* Pending deletion requests alert */}
+      {pendingDeletionCount > 0 && (
+        <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+          <Inbox className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-300">
+            <span className="font-semibold">{pendingDeletionCount} solicitud{pendingDeletionCount > 1 ? "es" : ""} de eliminación pendiente{pendingDeletionCount > 1 ? "s" : ""}.</span>{" "}
+            <Link href="/equipo" className="underline hover:no-underline">
+              Revisar en Equipo →
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* 1. Top Level KPIs - The "Pulse" */}
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">

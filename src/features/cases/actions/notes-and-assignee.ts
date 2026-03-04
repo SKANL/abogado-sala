@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server-admin";
+import { createNotification } from "@/lib/services/notification-service";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { Result, ActionState } from "@/types";
 import { ERROR_CODES, handleError } from "@/lib/utils/error-handler";
@@ -61,6 +63,35 @@ export async function addCaseNoteAction(
     .single();
 
   if (error) return handleError(error);
+
+  // Notify the assigned lawyer if they are not the note's author
+  try {
+    const adminClient = createAdminClient();
+    const { data: caseRef } = await adminClient
+      .from("cases")
+      .select("org_id, assigned_to, clients(full_name)")
+      .eq("id", parse.data.case_id)
+      .single();
+
+    type ClientRef = { full_name?: string };
+    const clientData = caseRef?.clients as ClientRef | null;
+    if (
+      caseRef &&
+      caseRef.assigned_to &&
+      caseRef.assigned_to !== user.id // don't notify the author
+    ) {
+      await createNotification(adminClient, {
+        userId: caseRef.assigned_to,
+        orgId: caseRef.org_id,
+        title: "Nueva Nota Interna",
+        message: `Se ha añadido una nota al expediente de ${clientData?.full_name ?? "un cliente"}.`,
+        type: "info",
+        metadata: { case_id: parse.data.case_id, link: `/casos/${parse.data.case_id}?tab=notes` },
+      });
+    }
+  } catch (err) {
+    console.error("Failed to send case note notification:", err);
+  }
 
   revalidatePath(`/casos/${parse.data.case_id}`);
   revalidateTag(CACHE_TAGS.caseNotes(parse.data.case_id), {});
@@ -126,12 +157,58 @@ export async function assignCaseAction(
   }
 
   // assigned_to column — now typed via generated types
+  const adminClient = createAdminClient();
+
+  // Fetch the old assignee before updating
+  const { data: beforeCase } = await adminClient
+    .from("cases")
+    .select("org_id, assigned_to, clients(full_name)")
+    .eq("id", caseId)
+    .single();
+
   const { error } = await supabase
     .from("cases")
     .update({ assigned_to: assignedTo })
     .eq("id", caseId);
 
   if (error) return handleError(error);
+
+  type ClientRef = { full_name?: string };
+  const clientData = beforeCase?.clients as ClientRef | null;
+  const orgId = beforeCase?.org_id;
+  const oldAssigneeId = beforeCase?.assigned_to;
+
+  const notifications: Promise<void>[] = [];
+
+  // Notify the newly assigned lawyer
+  if (assignedTo && orgId) {
+    notifications.push(
+      createNotification(adminClient, {
+        userId: assignedTo,
+        orgId,
+        title: "Nuevo Expediente Asignado",
+        message: `Se te ha asignado el expediente de ${clientData?.full_name ?? "un cliente"}.`,
+        type: "info",
+        metadata: { case_id: caseId, link: `/casos/${caseId}` },
+      }).catch((err) => console.error("Assign notification error:", err))
+    );
+  }
+
+  // Notify the previous assignee (if different from the new one)
+  if (oldAssigneeId && oldAssigneeId !== assignedTo && orgId) {
+    notifications.push(
+      createNotification(adminClient, {
+        userId: oldAssigneeId,
+        orgId,
+        title: "Expediente Reasignado",
+        message: `El expediente de ${clientData?.full_name ?? "un cliente"} ha sido reasignado a otro abogado.`,
+        type: "warning",
+        metadata: { case_id: caseId, link: `/casos/${caseId}` },
+      }).catch((err) => console.error("Unassign notification error:", err))
+    );
+  }
+
+  await Promise.all(notifications);
 
   revalidatePath(`/casos/${caseId}`);
   revalidateTag(CACHE_TAGS.caseDetail(caseId), {});

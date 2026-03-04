@@ -3,31 +3,59 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientForm } from "@/features/clients/components/client-form";
+import { ClientAssigneeSelector } from "@/features/clients/components/client-assignee-selector";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { FileText, User, ArrowLeft, FolderOpen, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getStepName, getWizardProgress } from "@/features/portal/config";
-import { getClientById, getClientCases } from "@/lib/db/queries";
+import { getClientById, getClientCases, getOrgTeam, getOrgSettings } from "@/lib/db/queries";
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
     const supabase = await createClient();
     const { id } = await params;
     const { data: { user } } = await supabase.auth.getUser();
     const orgId = user?.app_metadata?.org_id as string;
+    const userId = user?.id as string;
+    const role = (user?.app_metadata?.role ?? "member") as string;
+    const isOwnerAdmin = role === "owner" || role === "admin";
+    const isMember = !isOwnerAdmin;
 
-    // Both calls are cached — revalidated when client/case data changes
-    const [client, cases] = await Promise.all([
+    // All cached — revalidated when client/case data changes
+    const [client, cases, teamMembers, orgSettings] = await Promise.all([
         getClientById(id, orgId),
         getClientCases(id, orgId),
+        isOwnerAdmin ? getOrgTeam(orgId) : Promise.resolve([]),
+        isMember ? getOrgSettings(orgId) : Promise.resolve(null),
     ]);
 
     if (!client) {
         notFound();
     }
 
+    // Guard: members who cannot see all clients may only view their assigned clients
+    if (isMember) {
+        const membersCanSeeAll = orgSettings?.members_can_see_all_clients ?? false;
+        const assignedLawyerId = (client as { assigned_lawyer_id?: string | null }).assigned_lawyer_id;
+        if (!membersCanSeeAll && assignedLawyerId !== userId) {
+            notFound();
+        }
+    }
+
     const firstActiveCase = cases.find(c => c.status === "in_progress" || c.status === "review") ?? cases[0];
+
+    // Map team members with workload counts
+    const mappedTeam = teamMembers.map((m) => {
+        const casesData = m.cases as { count: number }[] | undefined;
+        return {
+            id: m.id,
+            full_name: m.full_name,
+            avatar_url: m.avatar_url,
+            role: m.role,
+            activeCases: casesData?.[0]?.count ?? 0,
+        };
+    });
 
     return (
         <div className="space-y-4">
@@ -46,6 +74,15 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
                         <p className="text-sm text-muted-foreground italic">
                             Registrado el {new Date(client.created_at).toLocaleDateString("es-MX", { timeZone: "UTC" })}
                         </p>
+                    </div>
+                    {/* Assignee selector below the status row */}
+                    <div className="pt-1">
+                        <ClientAssigneeSelector
+                            clientId={client.id}
+                            currentAssigneeId={(client as { assigned_lawyer_id?: string | null }).assigned_lawyer_id ?? null}
+                            teamMembers={mappedTeam}
+                            canAssign={isOwnerAdmin}
+                        />
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 pt-1">

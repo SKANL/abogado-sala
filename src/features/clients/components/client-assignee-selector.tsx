@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { assignCaseAction } from "@/features/cases/actions/notes-and-assignee";
+import { assignClientAction } from "@/features/clients/actions";
 import {
   Select,
   SelectContent,
@@ -19,12 +19,11 @@ interface TeamMember {
   full_name: string | null;
   avatar_url: string | null;
   role: string;
-  /** Active case count for workload display */
   activeCases?: number;
 }
 
-interface CaseAssigneeSelectorProps {
-  caseId: string;
+interface ClientAssigneeSelectorProps {
+  clientId: string;
   currentAssigneeId: string | null;
   teamMembers: TeamMember[];
   /** Only owners and admins can reassign */
@@ -37,16 +36,12 @@ const ROLE_LABELS: Record<string, string> = {
   member: "Abogado",
 };
 
-/**
- * Dropdown to assign/reassign a case to a team member.
- * Owners and admins can change assignment; members see it read-only.
- */
-export function CaseAssigneeSelector({
-  caseId,
+export function ClientAssigneeSelector({
+  clientId,
   currentAssigneeId,
   teamMembers,
   canAssign = false,
-}: CaseAssigneeSelectorProps) {
+}: ClientAssigneeSelectorProps) {
   const [assignedTo, setAssignedTo] = useState<string>(currentAssigneeId ?? "unassigned");
   const [isPending, startTransition] = useTransition();
 
@@ -56,12 +51,12 @@ export function CaseAssigneeSelector({
     setAssignedTo(value); // Optimistic
 
     startTransition(async () => {
-      const result = await assignCaseAction(caseId, nextValue);
+      const result = await assignClientAction(clientId, nextValue);
       if (result.success) {
         const member = teamMembers.find((m) => m.id === nextValue);
         toast.success(
           nextValue
-            ? `Expediente asignado a ${member?.full_name ?? "abogado"}`
+            ? `Cliente asignado a ${member?.full_name ?? "abogado"}`
             : "Asignación eliminada"
         );
       } else {
@@ -74,10 +69,9 @@ export function CaseAssigneeSelector({
   const currentMember = teamMembers.find((m) => m.id === assignedTo);
 
   if (!canAssign) {
-    // Read-only view for members
     return (
       <div className="flex items-center gap-2">
-        <Label className="text-xs text-muted-foreground shrink-0">Asignado a</Label>
+        <Label className="text-xs text-muted-foreground shrink-0">Abogado encargado</Label>
         {currentMember ? (
           <div className="flex items-center gap-1.5">
             <Avatar className="h-5 w-5">
@@ -97,13 +91,13 @@ export function CaseAssigneeSelector({
 
   return (
     <div className="flex items-center gap-2">
-      <Label className="text-xs text-muted-foreground shrink-0">Asignado a</Label>
+      <Label className="text-xs text-muted-foreground shrink-0">Abogado encargado</Label>
       <div className="relative">
         {isPending && (
           <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground z-10" />
         )}
         <Select value={assignedTo} onValueChange={handleChange} disabled={isPending}>
-          <SelectTrigger className="h-8 text-sm min-w-[160px]">
+          <SelectTrigger className="h-8 text-sm min-w-[170px]">
             <SelectValue>
               {currentMember ? (
                 <div className="flex items-center gap-1.5">

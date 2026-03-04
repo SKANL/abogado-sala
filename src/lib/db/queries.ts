@@ -24,14 +24,16 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
 
 // ─── Cases ────────────────────────────────────────────────────────────────────
 
+export type CasesViewMode = 'all' | 'assigned' | 'mine';
+
 export async function getCasesList(
   orgId: string,
   userId?: string,
-  isMember?: boolean
+  view: CasesViewMode = 'all'
 ) {
   "use cache";
   cacheTag(CACHE_TAGS.cases);
-  if (isMember && userId) cacheTag(`cases-user-${userId}`);
+  if (userId && view !== 'all') cacheTag(`cases-user-${userId}`);
   cacheLife("minutes");
 
   const supabase = createAdminClient();
@@ -41,8 +43,10 @@ export async function getCasesList(
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
-  if (isMember && userId) {
+  if (view === 'assigned' && userId) {
     query = query.eq("assigned_to", userId);
+  } else if (view === 'mine' && userId) {
+    query = query.eq("created_by", userId);
   }
 
   const { data } = await query;
@@ -52,11 +56,11 @@ export async function getCasesList(
 export async function getCasesKanban(
   orgId: string,
   userId?: string,
-  isMember?: boolean
+  view: CasesViewMode = 'all'
 ) {
   "use cache";
   cacheTag(CACHE_TAGS.cases);
-  if (isMember && userId) cacheTag(`cases-user-${userId}`);
+  if (userId && view !== 'all') cacheTag(`cases-user-${userId}`);
   cacheLife("minutes");
 
   const supabase = createAdminClient();
@@ -66,8 +70,10 @@ export async function getCasesKanban(
     .eq("org_id", orgId)
     .order("updated_at", { ascending: false });
 
-  if (isMember && userId) {
+  if (view === 'assigned' && userId) {
     query = query.eq("assigned_to", userId);
+  } else if (view === 'mine' && userId) {
+    query = query.eq("created_by", userId);
   }
 
   const { data } = await query;
@@ -104,18 +110,26 @@ export async function getCaseByToken(token: string) {
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
-export async function getClientsList(orgId: string) {
+export type ClientsViewMode = 'all' | 'mine';
+
+export async function getClientsList(orgId: string, userId?: string, view: ClientsViewMode = 'all') {
   "use cache";
   cacheTag(CACHE_TAGS.clients);
+  if (userId && view === 'mine') cacheTag(`clients-user-${userId}`);
   cacheLife("minutes");
 
   const supabase = createAdminClient();
-  const { data } = await supabase
+  let query = supabase
     .from("clients")
     .select("*")
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
+  if (view === 'mine' && userId) {
+    query = query.eq("assigned_lawyer_id", userId);
+  }
+
+  const { data } = await query;
   return data ?? [];
 }
 
@@ -228,7 +242,7 @@ export async function getOrgSettings(orgId: string) {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("organizations")
-    .select("id, name, primary_color, logo_url, consent_text, storage_used, plan_tier")
+    .select("id, name, primary_color, logo_url, consent_text, storage_used, plan_tier, members_can_see_all_cases, members_can_see_all_clients, whatsapp_template")
     .eq("id", orgId)
     .single();
 
@@ -245,7 +259,7 @@ export async function getOrgTeam(orgId: string) {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, role, updated_at, cases!cases_assigned_lawyer_id_fkey(count)")
+    .select("id, full_name, avatar_url, role, updated_at, cases!cases_assigned_to_fkey(count)")
     .eq("org_id", orgId);
 
   return data ?? [];
@@ -418,28 +432,86 @@ export async function getOrgAuditLogsWithActors(orgId: string) {
 export async function getLawyerDashboardData(userId: string, orgId: string) {
   "use cache";
   cacheTag(CACHE_TAGS.cases);
+  cacheTag(CACHE_TAGS.clients);
   cacheLife("minutes");
 
   const supabase = createAdminClient();
 
-  const [{ count: myCasesCount }, { data: recentCases }] = await Promise.all([
+  const [
+    { data: allMyCases },
+    { data: recentCases },
+    { count: assignedClientsCount },
+    { data: pendingDocsCases },
+    { data: myDeletionRequests },
+  ] = await Promise.all([
+    // All my cases for status breakdown
     supabase
       .from("cases")
-      .select("*", { count: "exact", head: true })
-      .eq("assigned_to", userId)
-      .eq("org_id", orgId)
-      .in("status", ["in_progress", "review"]),
+      .select("status")
+      .or(`assigned_to.eq.${userId},created_by.eq.${userId}`)
+      .eq("org_id", orgId),
+    // 5 most recent for the list widget
     supabase
       .from("cases")
       .select("id, token, status, updated_at, clients(full_name)")
-      .eq("assigned_to", userId)
+      .or(`assigned_to.eq.${userId},created_by.eq.${userId}`)
       .eq("org_id", orgId)
       .order("updated_at", { ascending: false })
       .limit(5),
+    // Clients directly assigned to me
+    supabase
+      .from("clients")
+      .select("id", { count: "exact", head: true })
+      .eq("assigned_lawyer_id", userId)
+      .eq("org_id", orgId),
+    // Cases with pending documents (at least one pending file)
+    supabase
+      .from("cases")
+      .select("id, case_files!inner(status)")
+      .or(`assigned_to.eq.${userId},created_by.eq.${userId}`)
+      .eq("org_id", orgId)
+      .eq("case_files.status", "pending"),
+    // My pending deletion requests
+    supabase
+      .from("deletion_requests")
+      .select("id, entity_type, entity_label, status, created_at")
+      .eq("requested_by", userId)
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
+  // Status breakdown
+  const statusBreakdown: Record<string, number> = {};
+  (allMyCases ?? []).forEach((c) => {
+    statusBreakdown[c.status] = (statusBreakdown[c.status] || 0) + 1;
+  });
+  const activeCasesCount = (statusBreakdown["in_progress"] || 0) + (statusBreakdown["review"] || 0);
+
   return {
-    myCasesCount: myCasesCount ?? 0,
+    myCasesCount: activeCasesCount,
+    totalCases: (allMyCases ?? []).length,
+    statusBreakdown,
     recentCases: recentCases ?? [],
+    assignedClientsCount: assignedClientsCount ?? 0,
+    pendingDocsCount: (pendingDocsCases ?? []).length,
+    myPendingDeletionRequests: myDeletionRequests ?? [],
   };
+}
+
+// ─── Deletion Requests ────────────────────────────────────────────────────────
+
+export async function getDeletionRequests(orgId: string) {
+  "use cache";
+  cacheTag(CACHE_TAGS.deletionRequests);
+  cacheLife("seconds");
+
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("deletion_requests")
+    .select("*, requester:profiles!deletion_requests_requested_by_fkey(full_name, avatar_url)")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false });
+
+  return data ?? [];
 }

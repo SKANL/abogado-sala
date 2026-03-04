@@ -7,6 +7,7 @@ import { handleError, ERROR_CODES } from "@/lib/utils/error-handler";
 import { Result, ActionState } from "@/types";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import crypto from "crypto";
 
 export async function inviteMemberAction(
   prevState: ActionState,
@@ -32,7 +33,6 @@ export async function inviteMemberAction(
      return { success: false, error: "No org_id found", code: ERROR_CODES.AUTH_UNAUTHORIZED };
   }
 
-  const crypto = require("crypto"); // eslint-disable-line @typescript-eslint/no-require-imports
   const token = crypto.randomBytes(32).toString("hex");
 
   const { error, data: invitation } = await supabase
@@ -95,6 +95,83 @@ export async function updateOrganizationAction(
     revalidatePath("/dashboard");
     revalidateTag(CACHE_TAGS.dashboard, {});
     return { success: true, data: updatedOrg };
+}
+
+export async function setMemberCasesVisibilityAction(value: boolean): Promise<Result<void>> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const role = user?.app_metadata?.role as string | undefined;
+    const org_id = user?.app_metadata?.org_id as string | undefined;
+
+    if (!org_id) return { success: false, error: "No org_id found", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+    if (role !== "owner" && role !== "admin") {
+        return { success: false, error: "Sin permisos", code: ERROR_CODES.AUTH_FORBIDDEN };
+    }
+
+    const { error } = await supabase
+        .from("organizations")
+        .update({ members_can_see_all_cases: value })
+        .eq("id", org_id);
+
+    if (error) return handleError(error);
+
+    revalidatePath("/ajustes");
+    revalidatePath("/casos");
+    revalidatePath("/casos/kanban");
+    revalidateTag(CACHE_TAGS.dashboard, {});
+    return { success: true, data: undefined };
+}
+
+export async function setMemberClientsVisibilityAction(value: boolean): Promise<Result<void>> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const role = user?.app_metadata?.role as string | undefined;
+    const org_id = user?.app_metadata?.org_id as string | undefined;
+
+    if (!org_id) return { success: false, error: "No org_id found", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+    if (role !== "owner" && role !== "admin") {
+        return { success: false, error: "Sin permisos", code: ERROR_CODES.AUTH_FORBIDDEN };
+    }
+
+    const { error } = await supabase
+        .from("organizations")
+        .update({ members_can_see_all_clients: value })
+        .eq("id", org_id);
+
+    if (error) return handleError(error);
+
+    revalidatePath("/ajustes");
+    revalidatePath("/clientes");
+    revalidateTag(CACHE_TAGS.dashboard, {});
+    return { success: true, data: undefined };
+}
+
+export async function setWhatsappTemplateAction(template: string): Promise<Result<void>> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const role = user?.app_metadata?.role as string | undefined;
+    const org_id = user?.app_metadata?.org_id as string | undefined;
+
+    if (!org_id) return { success: false, error: "No org_id found", code: ERROR_CODES.AUTH_UNAUTHORIZED };
+    if (role !== "owner" && role !== "admin") {
+        return { success: false, error: "Sin permisos", code: ERROR_CODES.AUTH_FORBIDDEN };
+    }
+
+    const trimmed = template.trim();
+    if (!trimmed.includes("{link}")) {
+        return { success: false, error: "El template debe contener la variable {link}", code: ERROR_CODES.VAL_INVALID_INPUT };
+    }
+
+    const { error } = await supabase
+        .from("organizations")
+        .update({ whatsapp_template: trimmed })
+        .eq("id", org_id);
+
+    if (error) return handleError(error);
+
+    revalidatePath("/ajustes");
+    revalidateTag(CACHE_TAGS.dashboard, {});
+    return { success: true, data: undefined };
 }
 
 export async function updateMemberRoleAction(
