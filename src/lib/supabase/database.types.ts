@@ -63,6 +63,9 @@ export type Database = {
           file_size: number
           id: string
           org_id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: Database["public"]["Enums"]["file_status"]
           updated_at: string
         }
@@ -76,6 +79,9 @@ export type Database = {
           file_size?: number
           id?: string
           org_id: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["file_status"]
           updated_at?: string
         }
@@ -89,6 +95,9 @@ export type Database = {
           file_size?: number
           id?: string
           org_id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["file_status"]
           updated_at?: string
         }
@@ -105,6 +114,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_files_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -157,6 +173,54 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_updates: {
+        Row: {
+          author_id: string | null
+          body: string | null
+          case_id: string
+          created_at: string | null
+          id: string
+          org_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          author_id?: string | null
+          body?: string | null
+          case_id: string
+          created_at?: string | null
+          id?: string
+          org_id: string
+          title: string
+          type?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string | null
+          case_id?: string
+          created_at?: string | null
+          id?: string
+          org_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_updates_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_updates_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
             referencedColumns: ["id"]
           },
         ]
@@ -251,6 +315,7 @@ export type Database = {
       clients: {
         Row: {
           assigned_lawyer_id: string | null
+          auth_user_id: string | null
           created_at: string
           email: string | null
           full_name: string
@@ -262,6 +327,7 @@ export type Database = {
         }
         Insert: {
           assigned_lawyer_id?: string | null
+          auth_user_id?: string | null
           created_at?: string
           email?: string | null
           full_name: string
@@ -273,6 +339,7 @@ export type Database = {
         }
         Update: {
           assigned_lawyer_id?: string | null
+          auth_user_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string
@@ -773,6 +840,93 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          case_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          org_id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          case_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          org_id: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          case_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          org_id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           created_at: string
@@ -826,9 +980,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      app_get_client_id: { Args: never; Returns: string }
       app_get_org_id: { Args: never; Returns: string }
       app_is_active: { Args: never; Returns: boolean }
       app_is_admin: { Args: never; Returns: boolean }
+      app_is_client: { Args: never; Returns: boolean }
       app_is_owner: { Args: never; Returns: boolean }
       check_rate_limit: {
         Args: {
@@ -851,6 +1007,9 @@ export type Database = {
           file_size: number
           id: string
           org_id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: Database["public"]["Enums"]["file_status"]
           updated_at: string
         }
@@ -881,6 +1040,17 @@ export type Database = {
         Returns: undefined
       }
       get_case_by_token: { Args: { p_token: string }; Returns: Json }
+      get_case_updates_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          title: string
+          type: string
+        }[]
+      }
       get_case_validation: {
         Args: { p_token: string }
         Returns: {
@@ -951,7 +1121,7 @@ export type Database = {
     Enums: {
       case_status: "draft" | "in_progress" | "review" | "completed" | "archived"
       client_status: "prospect" | "active" | "archived"
-      file_status: "pending" | "uploaded" | "error"
+      file_status: "pending" | "uploaded" | "error" | "approved" | "rejected"
       invitation_status: "pending" | "accepted" | "expired" | "revoked"
       plan_status:
         | "active"
@@ -1101,7 +1271,7 @@ export const Constants = {
     Enums: {
       case_status: ["draft", "in_progress", "review", "completed", "archived"],
       client_status: ["prospect", "active", "archived"],
-      file_status: ["pending", "uploaded", "error"],
+      file_status: ["pending", "uploaded", "error", "approved", "rejected"],
       invitation_status: ["pending", "accepted", "expired", "revoked"],
       plan_status: [
         "active",

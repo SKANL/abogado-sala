@@ -61,7 +61,10 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
   };
 
   const hasFileRequirements = files.length > 0;
-  const areAllFilesUploaded = hasFileRequirements && files.every((f) => f.status === 'uploaded' || f.status === 'exception');
+  const areAllFilesUploaded =
+    hasFileRequirements &&
+    files.every((f) => ['uploaded', 'approved', 'exception'].includes(f.status)) &&
+    !files.some((f) => f.status === 'rejected');
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -152,6 +155,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
                             category={file.category}
                             description={file.description}
                             status={file.status}
+                            reviewNote={file.review_note}
                             token={token}
                             onSuccess={router.refresh}
                         />
@@ -167,7 +171,7 @@ export function PortalWizard({ token, initialCaseData, clientName, files, orgNam
                 {hasFileRequirements ? (
                   <p className="text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">
-                      {files.filter((f) => f.status === 'uploaded' || f.status === 'exception').length}
+                      {files.filter((f) => ['uploaded', 'approved', 'exception'].includes(f.status)).length}
                     </span>
                     {" "}/{" "}
                     <span className="font-medium text-foreground">{files.length}</span>

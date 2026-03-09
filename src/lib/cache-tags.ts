@@ -23,10 +23,13 @@ export const CACHE_TAGS = {
   notifications:    "notifications",
   dashboard:        "dashboard",
   deletionRequests: "deletion-requests",
+  myTasks:          "my-tasks",
 
   // Instance helpers
   caseDetail:    (id: string)      => `case-${id}`,
   caseNotes:     (caseId: string)  => `case-notes-${caseId}`,
+  caseUpdates:   (caseId: string)  => `case-updates-${caseId}`,
+  caseTasks:     (caseId: string)  => `case-tasks-${caseId}`,
   clientDetail:  (id: string)      => `client-${id}`,
   templateDetail:(id: string)      => `template-${id}`,
   portalCase:    (token: string)   => `portal-${token}`,

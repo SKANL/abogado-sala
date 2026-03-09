@@ -1,18 +1,20 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { PortalWizard } from "@/features/portal/components/portal-wizard";
+import { PortalTabs } from "@/features/portal/components/portal-tabs";
 import { PortalCompletedScreen } from "@/features/portal/components/portal-completed-screen";
+import { getCaseUpdatesByTokenAction } from "@/features/portal/actions";
 import type { PortalFile } from "@/features/portal/actions";
 
 async function RoomContent({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = await createClient();
 
-  // Parallel: case data + org branding
-  const [caseResult, brandingResult] = await Promise.all([
+  // Parallel: case data + org branding + case updates
+  const [caseResult, brandingResult, updatesResult] = await Promise.all([
     supabase.rpc("get_case_by_token", { p_token: token }),
     supabase.rpc("get_case_validation", { p_token: token }),
+    getCaseUpdatesByTokenAction(token),
   ]);
 
   const { data: resultData, error } = caseResult;
@@ -27,6 +29,9 @@ async function RoomContent({ params }: { params: Promise<{ token: string }> }) {
   const caseData = result.case;
   const clientName = result.client_name;
   const files = result.files || [];
+
+  // Case updates (portal read-only)
+  const caseUpdates = updatesResult.success && updatesResult.data ? updatesResult.data : [];
 
   // Extract org branding (non-critical — fallback gracefully)
   const brandingRow = brandingResult.data?.[0];
@@ -59,7 +64,7 @@ async function RoomContent({ params }: { params: Promise<{ token: string }> }) {
   }
 
   return (
-    <PortalWizard 
+    <PortalTabs
       token={token}
       initialCaseData={caseData}
       clientName={clientName}
@@ -67,6 +72,7 @@ async function RoomContent({ params }: { params: Promise<{ token: string }> }) {
       orgName={orgName}
       orgLogoUrl={orgLogoUrl}
       orgConsentText={orgConsentText}
+      initialUpdates={caseUpdates}
     />
   );
 }

@@ -4,19 +4,23 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, FileText, ClipboardList, ArrowLeft, StickyNote } from "lucide-react";
+import { Calendar, FileText, ClipboardList, ArrowLeft, StickyNote, Activity, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { CaseActionsDropdown } from "@/features/cases/components/case-actions-menu";
-import { CaseFilesList } from "@/features/cases/components/case-files-list";
+import { CaseFileReviewCard } from "@/features/cases/components/case-file-review-card";
+import { CaseUpdatePublisher } from "@/features/cases/components/case-update-publisher";
+import { CaseUpdatesTimeline } from "@/features/cases/components/case-updates-timeline";
 import { CaseRealtimeListener } from "@/features/cases/components/case-realtime-listener";
 import { CaseStatusSelector } from "@/features/cases/components/case-status-selector";
 import { CaseNotes } from "@/features/cases/components/case-notes";
 import { CaseAssigneeSelector } from "@/features/cases/components/case-assignee-selector";
 import { ShareCaseButtons } from "@/features/cases/components/share-case-buttons";
+import { InviteClientPortalButton } from "@/features/portal/components/invite-client-portal-button";
+import { TaskList } from "@/features/tasks/components/task-list";
 import { getStepName, getWizardProgress } from "@/features/portal/config";
-import { getCaseById, getOrgTeam, getCaseNotes, getOrgSettings } from "@/lib/db/queries";
+import { getCaseById, getCaseTasks, getOrgTeam, getCaseNotes, getOrgSettings, getCaseUpdates } from "@/lib/db/queries";
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -28,16 +32,31 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   const orgId = user?.app_metadata?.org_id as string;
 
   // Parallel fetch — all cached, revalidated by Server Actions
-  const [{ data: c, error }, teamMembers, rawNotes, orgSettings] = await Promise.all([
+  const [{ data: c, error }, teamMembers, rawNotes, orgSettings, rawUpdates, caseTasks] = await Promise.all([
     getCaseById(id, orgId),
-    isOwnerAdmin ? getOrgTeam(orgId) : Promise.resolve([]),
+    getOrgTeam(orgId),
     getCaseNotes(id),
     getOrgSettings(orgId),
+    getCaseUpdates(id),
+    getCaseTasks(id),
   ]);
 
   if (error || !c) notFound();
 
   const notes = rawNotes.map((n) => ({ ...n, author: Array.isArray(n.author) ? n.author[0] ?? null : n.author }));
+
+  // Map raw case_updates to CaseUpdateItem
+  const caseUpdates = rawUpdates.map((u) => {
+    const authorRow = Array.isArray(u.author) ? u.author[0] : u.author;
+    return {
+      id: u.id,
+      title: u.title,
+      body: (u as { body?: string | null }).body ?? null,
+      type: (u as { type?: string }).type ?? 'info',
+      author_name: (authorRow as { full_name?: string | null } | null)?.full_name ?? null,
+      created_at: u.created_at ?? new Date().toISOString(),
+    };
+  });
 
   // Map team members with active-case workload count
   const mappedTeam = teamMembers.map((m) => {
@@ -121,6 +140,22 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
               <TabsTrigger value="questionnaire" className="gap-1.5 whitespace-nowrap">
                 <ClipboardList className="h-3.5 w-3.5" /> Cuestionario
               </TabsTrigger>
+              <TabsTrigger value="updates" className="gap-1.5 whitespace-nowrap">
+                <Activity className="h-3.5 w-3.5" /> Actualizaciones
+                {caseUpdates.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px]">
+                    {caseUpdates.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="gap-1.5 whitespace-nowrap">
+                <CheckSquare className="h-3.5 w-3.5" /> Tareas
+                {caseTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px]">
+                    {caseTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="notes" className="gap-1.5 whitespace-nowrap">
                 <StickyNote className="h-3.5 w-3.5" />
                 Notas Internas
@@ -141,7 +176,14 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                   <CardDescription>Documentos subidos por el cliente o el despacho.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CaseFilesList files={c.files || []} />
+                  <CaseFileReviewCard
+                    files={(c.files ?? []).map((f) => ({
+                      ...f,
+                      reviewed_at: (f as { reviewed_at?: string | null }).reviewed_at ?? null,
+                    }))}
+                    caseId={id}
+                    canReview
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -179,6 +221,45 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                       </div>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="updates" className="mt-4 space-y-4">
+              <CaseUpdatePublisher caseId={id} />
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Activity className="h-4 w-4" /> Historial de Actualizaciones
+                  </CardTitle>
+                  <CardDescription>Mensajes publicados al cliente desde el portal.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CaseUpdatesTimeline
+                    updates={caseUpdates}
+                    canDelete={isOwnerAdmin}
+                    caseId={id}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="tasks" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CheckSquare className="h-4 w-4" /> Tareas del Expediente
+                  </CardTitle>
+                  <CardDescription>To-dos y pendientes del equipo para este caso.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TaskList
+                    caseId={id}
+                    initialTasks={caseTasks}
+                    teamMembers={mappedTeam}
+                    currentUserId={user!.id}
+                    canDelete={isOwnerAdmin}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -265,6 +346,26 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                   currentAssigneeId={c.assigned_to ?? null}
                   teamMembers={mappedTeam}
                   canAssign={isOwnerAdmin}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {isOwnerAdmin && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Portal del Cliente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {(c.client as { auth_user_id?: string | null })?.auth_user_id
+                    ? "El cliente tiene una cuenta activa y puede acceder a su portal autenticado."
+                    : "Invita al cliente a crear una cuenta para acceder a su portal autenticado."}
+                </p>
+                <InviteClientPortalButton
+                  clientId={c.client_id}
+                  hasAccount={!!(c.client as { auth_user_id?: string | null })?.auth_user_id}
+                  clientEmail={(c.client as { email?: string | null })?.email}
                 />
               </CardContent>
             </Card>

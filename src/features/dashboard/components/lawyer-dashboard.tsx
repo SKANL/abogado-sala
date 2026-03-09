@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Briefcase, ArrowRight, Users, FileWarning, Clock } from "lucide-react";
+import { MyTasksWidget } from "@/features/tasks/components/my-tasks-widget";
 import { QuickActions } from "./widgets/quick-actions";
 import { DashboardRealtimeListener } from "./dashboard-realtime-listener";
 import { STATUS_CLASSES } from "@/lib/constants";
@@ -97,6 +98,9 @@ export async function LawyerDashboard({ userId, orgId }: LawyerDashboardProps) {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* My Tasks */}
+            <MyTasksWidget userId={userId} orgId={orgId} />
 
             {/* Quick Actions + Recent Cases */}
             <div className="grid gap-4 md:grid-cols-2">

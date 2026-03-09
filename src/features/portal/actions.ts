@@ -13,7 +13,8 @@ export type PortalFile = {
   id: string;
   category: string;
   description?: string | null;
-  status: 'pending' | 'uploaded' | 'missing' | 'rejected' | 'exception';
+  status: 'pending' | 'uploaded' | 'approved' | 'rejected' | 'missing' | 'exception';
+  review_note?: string | null;
 };
 
 export type CasePublic = {
@@ -245,4 +246,26 @@ export async function confirmPortalUploadAction(
 
     revalidatePath(`/sala/${token}`);
     return { success: true, data: undefined };
+}
+
+// ─── Case Updates (portal / anon) ────────────────────────────────────────────
+
+export type CaseUpdate = {
+  id: string;
+  title: string;
+  body?: string | null;
+  type: 'info' | 'milestone' | 'warning' | 'document_request';
+  author_name?: string | null;
+  created_at: string;
+};
+
+export async function getCaseUpdatesByTokenAction(token: string): Promise<Result<CaseUpdate[]>> {
+  if (!token) return { success: false, error: "Token requerido", code: ERROR_CODES.VAL_INVALID_INPUT };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_case_updates_by_token", { p_token: token });
+
+  if (error) return handleError(error);
+
+  return { success: true, data: (data ?? []) as CaseUpdate[] };
 }

@@ -515,3 +515,65 @@ export async function getDeletionRequests(orgId: string) {
 
   return data ?? [];
 }
+
+// ─── Case Updates ────────────────────────────────────────────────────────────
+
+export async function getCaseUpdates(caseId: string) {
+  "use cache";
+  cacheTag(CACHE_TAGS.caseUpdates(caseId));
+  cacheLife("minutes");
+
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("case_updates")
+    .select("*, author:profiles(full_name, avatar_url)")
+    .eq("case_id", caseId)
+    .order("created_at", { ascending: false });
+
+  return data ?? [];
+}
+
+// ─── Tasks ─────────────────────────────────────────────────────────────────────
+
+export async function getCaseTasks(caseId: string) {
+  "use cache";
+  cacheTag(CACHE_TAGS.caseTasks(caseId));
+  cacheLife("seconds");
+
+  const supabase = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from("tasks")
+    .select(`
+      *,
+      assignee:profiles!tasks_assigned_to_fkey(id, full_name, avatar_url),
+      creator:profiles!tasks_created_by_fkey(id, full_name, avatar_url)
+    `)
+    .eq("case_id", caseId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as import("@/features/tasks/actions").TaskItem[];
+}
+
+export async function getMyTasks(userId: string, orgId: string) {
+  "use cache";
+  cacheTag(CACHE_TAGS.myTasks);
+  cacheTag(`my-tasks-${userId}`);
+  cacheLife("seconds");
+
+  const supabase = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from("tasks")
+    .select(`
+      id, case_id, title, description, status, priority, due_date, created_at, updated_at
+    `)
+    .eq("org_id", orgId)
+    .eq("assigned_to", userId)
+    .not("status", "in", '("completed","cancelled")')
+    .order("due_date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  return (data ?? []) as import("@/features/tasks/actions").TaskItem[];
+}

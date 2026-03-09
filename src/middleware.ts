@@ -82,6 +82,28 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // 4. Client Portal Protection — /mi-portal/* (except login)
+  if (path.startsWith("/mi-portal") && !path.startsWith("/mi-portal/login")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/mi-portal/login", request.url));
+    }
+    const role = user.app_metadata?.role as string | undefined;
+    if (role !== "client") {
+      // Staff accidentally hitting the client portal
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  // 5. Client Portal Login — redirect to /mi-portal if already authenticated as client
+  if (path === "/mi-portal/login" && user) {
+    const role = user.app_metadata?.role as string | undefined;
+    if (role === "client") {
+      return NextResponse.redirect(new URL("/mi-portal", request.url));
+    }
+    // Staff at the wrong login page — redirect to dashboard
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   return response;
 }
 

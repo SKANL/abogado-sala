@@ -6,8 +6,9 @@ import { confirmUploadAction } from "@/features/cases/actions";
 import { confirmPortalUploadAction } from "@/features/portal/actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { UploadCloud, Check, Loader2, Paperclip } from "lucide-react";
+import { UploadCloud, Check, Loader2, Paperclip, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Corrected Props based on Requirement: We upload against a specific `case_file` ID (the slot).
 interface DocumentUploadSlotProps {
@@ -15,12 +16,13 @@ interface DocumentUploadSlotProps {
   fileId: string; // The database ID of the 'case_files' row
   category: string;
   description?: string | null;
-  status: "pending" | "uploaded" | "missing" | "rejected" | "exception";
+  status: "pending" | "uploaded" | "missing" | "rejected" | "exception" | "approved";
+  reviewNote?: string | null;
   token?: string; // Optional: Only for Portal usage
   onSuccess: () => void;
 }
 
-export function DocumentUploadSlot({ caseId, fileId, category, description, status, token, onSuccess }: DocumentUploadSlotProps) {
+export function DocumentUploadSlot({ caseId, fileId, category, description, status, reviewNote, token, onSuccess }: DocumentUploadSlotProps) {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
@@ -83,11 +85,20 @@ export function DocumentUploadSlot({ caseId, fileId, category, description, stat
     }
   };
 
+  if (status === 'approved') {
+    return (
+      <div className="flex items-center gap-2 text-emerald-700 border border-emerald-200 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800">
+        <Check className="h-5 w-5 shrink-0" />
+        <span className="text-sm font-medium">✓ Aprobado por el despacho</span>
+      </div>
+    );
+  }
+
   if (status === 'uploaded') {
       return (
-          <div className="flex items-center gap-2 text-green-600 border p-3 rounded-md bg-green-50">
-              <Check className="h-5 w-5" />
-              <span className="text-sm font-medium">Subido y Recibido</span>
+          <div className="flex items-center gap-2 text-blue-600 border border-blue-200 p-3 rounded-md bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+              <Check className="h-5 w-5 shrink-0" />
+              <span className="text-sm font-medium">Subido — En revisión por el despacho</span>
           </div>
       );
   }
@@ -100,9 +111,18 @@ export function DocumentUploadSlot({ caseId, fileId, category, description, stat
                  <span className="text-sm font-medium truncate" title={description || category}>{description || category}</span>
               </div>
              {status === 'missing' && <span className="text-xs text-red-500 font-medium">Requerido</span>}
-             {status === 'rejected' && <span className="text-xs text-red-500 font-medium">Rechazado - Subir nuevo</span>}
+             {status === 'rejected' && <span className="text-xs text-red-500 font-medium">Rechazado · Sube un nuevo archivo</span>}
         </div>
         
+        {status === 'rejected' && reviewNote && (
+          <Alert variant="destructive" className="py-2 text-xs">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <span className="font-semibold">Motivo del rechazo: </span>{reviewNote}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex gap-2">
             <Input 
                 type="file" 
