@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
@@ -31,14 +32,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}
       >
-        <QueryProvider>
-            <AuthProvider>
-                <RealtimeProvider>
-                    {children}
-                    <Toaster />
-                </RealtimeProvider>
-            </AuthProvider>
-        </QueryProvider>
+        <Suspense fallback={null}>
+          <QueryProvider>
+              <AuthProvider>
+                  <RealtimeProvider>
+                      {children}
+                      <Toaster />
+                  </RealtimeProvider>
+              </AuthProvider>
+          </QueryProvider>
+        </Suspense>
       </body>
     </html>
   );
