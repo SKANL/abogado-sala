@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { CaseForm } from "@/features/cases/components/case-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DynamicCaseWizard } from "@/features/cases/components/dynamic-case-wizard";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -95,26 +95,19 @@ export default async function NewCasePage({
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="w-full space-y-6 pb-20">
             <PageHeader
                 title="Nuevo Expediente"
                 description={preselectedClient
                     ? `Iniciando trámite para ${preselectedClient.full_name}.`
-                    : "Inicia un nuevo trámite para un cliente."}
+                    : "Sigue los pasos para configurar un nuevo trámite legal."}
             />
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Detalles del Expediente</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <CaseForm
-                        clients={clients || []}
-                        templates={(templates || []) as Parameters<typeof CaseForm>[0]['templates']}
-                        preselectedClientId={client_id}
-                    />
-                </CardContent>
-            </Card>
+            <DynamicCaseWizard
+                clients={clients || []}
+                templates={(templates || []) as any}
+                preselectedClientId={client_id}
+            />
         </div>
     );
 }
